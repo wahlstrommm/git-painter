@@ -180,6 +180,18 @@
         <label for="invertToggle">Invert:</label>
         <input type="checkbox" id="invertToggle">
       </div>
+      <div class="control-row">
+        <label for="zoomSlider">Zoom:</label>
+        <input type="range" id="zoomSlider" min="10" max="100" value="100">
+      </div>
+      <div class="control-row">
+        <label for="posXSlider">Position X:</label>
+        <input type="range" id="posXSlider" min="0" max="100" value="50">
+      </div>
+      <div class="control-row">
+        <label for="posYSlider">Position Y:</label>
+        <input type="range" id="posYSlider" min="0" max="100" value="50">
+      </div>
     </section>
 
     <section class="preview-section" id="previewSection" style="display:none;">
@@ -375,23 +387,49 @@
       const ctx = canvas.getContext('2d');
 
       const img = uploadedImageData;
+      const zoom = parseInt(document.getElementById('zoomSlider').value) / 100; // 0.1 - 1.0
+      const posX = parseInt(document.getElementById('posXSlider').value) / 100; // 0 - 1
+      const posY = parseInt(document.getElementById('posYSlider').value) / 100; // 0 - 1
+
+      // Calculate source rectangle from image
+      // At zoom=1: crop-to-fill (cover). At zoom<1: image is smaller within the grid.
       const imgRatio = img.width / img.height;
       const gridRatio = gridW / gridH;
-      let sx, sy, sw, sh;
+
+      // Base crop (cover mode)
+      let baseSw, baseSh;
       if (imgRatio > gridRatio) {
-        sh = img.height; sw = img.height * gridRatio;
-        sx = (img.width - sw) / 2; sy = 0;
+        baseSh = img.height; baseSw = img.height * gridRatio;
       } else {
-        sw = img.width; sh = img.width / gridRatio;
-        sx = 0; sy = (img.height - sh) / 2;
+        baseSw = img.width; baseSh = img.width / gridRatio;
       }
+
+      // Apply zoom: smaller zoom = smaller image on grid = larger source area visible
+      // But we want zoom to mean "how big the image appears", so:
+      // zoom=1: image fills grid (cover). zoom=0.5: image is half size, centered
+      const drawW = Math.round(gridW * zoom);
+      const drawH = Math.round(gridH * zoom);
+      // Offset within grid based on position sliders
+      const offsetX = Math.round((gridW - drawW) * posX);
+      const offsetY = Math.round((gridH - drawH) * posY);
 
       // Step 1: Draw at higher resolution for better sampling
       const hiResW = gridW * 10;
       const hiResH = gridH * 10;
       canvas.width = hiResW;
       canvas.height = hiResH;
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, hiResW, hiResH);
+      // Fill with white (= level 0 after processing)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, hiResW, hiResH);
+      // Draw image at zoomed size and position
+      const hiDrawW = drawW * 10;
+      const hiDrawH = drawH * 10;
+      const hiOffsetX = offsetX * 10;
+      const hiOffsetY = offsetY * 10;
+      // Source: full image cropped to aspect ratio
+      const sx = (img.width - baseSw) / 2;
+      const sy = (img.height - baseSh) / 2;
+      ctx.drawImage(img, sx, sy, baseSw, baseSh, hiOffsetX, hiOffsetY, hiDrawW, hiDrawH);
       const hiResData = ctx.getImageData(0, 0, hiResW, hiResH);
       const hiPixels = hiResData.data;
 
@@ -451,6 +489,9 @@
 
     document.getElementById('thresholdSlider').addEventListener('input', processImage);
     document.getElementById('invertToggle').addEventListener('change', processImage);
+    document.getElementById('zoomSlider').addEventListener('input', processImage);
+    document.getElementById('posXSlider').addEventListener('input', processImage);
+    document.getElementById('posYSlider').addEventListener('input', processImage);
 
     // -------------------------------------------------------------------------
     // Bash script generation and download
