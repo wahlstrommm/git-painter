@@ -373,10 +373,7 @@
 
       const canvas = document.getElementById('processingCanvas');
       const ctx = canvas.getContext('2d');
-      canvas.width = gridW;
-      canvas.height = gridH;
 
-      // Crop-to-fill (cover mode)
       const img = uploadedImageData;
       const imgRatio = img.width / img.height;
       const gridRatio = gridW / gridH;
@@ -388,15 +385,41 @@
         sw = img.width; sh = img.width / gridRatio;
         sx = 0; sy = (img.height - sh) / 2;
       }
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, gridW, gridH);
 
-      const imageData = ctx.getImageData(0, 0, gridW, gridH);
-      const pixels = imageData.data;
+      // Step 1: Draw at higher resolution for better sampling
+      const hiResW = gridW * 10;
+      const hiResH = gridH * 10;
+      canvas.width = hiResW;
+      canvas.height = hiResH;
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, hiResW, hiResH);
+      const hiResData = ctx.getImageData(0, 0, hiResW, hiResH);
+      const hiPixels = hiResData.data;
 
-      // Grayscale luminance
-      const luminance = [];
-      for (let i = 0; i < pixels.length; i += 4) {
-        luminance.push(0.299 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2]);
+      // Step 2: Convert to grayscale at high res
+      const hiLum = new Float32Array(hiResW * hiResH);
+      for (let i = 0; i < hiPixels.length; i += 4) {
+        hiLum[i / 4] = 0.299 * hiPixels[i] + 0.587 * hiPixels[i + 1] + 0.114 * hiPixels[i + 2];
+      }
+
+      // Step 3: Downsample to grid size by averaging blocks
+      const cellW = hiResW / gridW;
+      const cellH = hiResH / gridH;
+      const luminance = new Float32Array(gridW * gridH);
+      for (let gy = 0; gy < gridH; gy++) {
+        for (let gx = 0; gx < gridW; gx++) {
+          let sum = 0, count = 0;
+          const startX = Math.floor(gx * cellW);
+          const endX = Math.floor((gx + 1) * cellW);
+          const startY = Math.floor(gy * cellH);
+          const endY = Math.floor((gy + 1) * cellH);
+          for (let y = startY; y < endY; y++) {
+            for (let x = startX; x < endX; x++) {
+              sum += hiLum[y * hiResW + x];
+              count++;
+            }
+          }
+          luminance[gy * gridW + gx] = sum / (count || 1);
+        }
       }
 
       // Auto-contrast
