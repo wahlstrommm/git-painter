@@ -407,7 +407,7 @@
 
       const threshold = parseInt(document.getElementById('thresholdSlider').value);
       const invert = document.getElementById('invertToggle').checked;
-      const bias = threshold / 50;
+      const bias = Math.max(threshold / 50, 0.1);
 
       cells.forEach(cell => {
         if (cell.date === null) { cell.level = -1; return; }
@@ -447,7 +447,8 @@
     function generateScript() {
       if (!currentGrid) return;
 
-      const repoUrl = document.getElementById('repoUrl').value.trim();
+      const repoUrlRaw = document.getElementById('repoUrl').value.trim();
+      const repoUrl = repoUrlRaw.replace(/[^a-zA-Z0-9_.:\/@\-]/g, '');
       const maxCommits = parseInt(document.getElementById('commitIntensity').value) || 20;
 
       let script = `#!/bin/bash
@@ -473,6 +474,11 @@ FORCE_PUSH=false
 REPO_URL="${repoUrl || 'https://github.com/YOUR_USER/YOUR_REPO.git'}"
 
 set -e
+
+if [ -d "git-painter-art/.git" ]; then
+  echo "Error: git-painter-art/ already exists. Delete it first or set FORCE_PUSH=true."
+  exit 1
+fi
 
 mkdir -p git-painter-art
 cd git-painter-art
