@@ -391,30 +391,8 @@
       const posX = parseInt(document.getElementById('posXSlider').value) / 100; // 0 - 1
       const posY = parseInt(document.getElementById('posYSlider').value) / 100; // 0 - 1
 
-      // Contain mode: fit entire image within zoomed area, preserving aspect ratio
       const imgRatio = img.width / img.height;
       const gridRatio = gridW / gridH;
-
-      // How big the image area is on the grid (in grid cells)
-      const areaW = gridW * zoom;
-      const areaH = gridH * zoom;
-      const areaRatio = areaW / areaH;
-
-      // Fit image inside the area (contain)
-      let drawW, drawH;
-      if (imgRatio > areaRatio) {
-        drawW = areaW;
-        drawH = areaW / imgRatio;
-      } else {
-        drawH = areaH;
-        drawW = areaH * imgRatio;
-      }
-
-      // Position within grid
-      const maxOffsetX = gridW - drawW;
-      const maxOffsetY = gridH - drawH;
-      const offsetX = maxOffsetX > 0 ? maxOffsetX * posX : 0;
-      const offsetY = maxOffsetY > 0 ? maxOffsetY * posY : 0;
 
       // Step 1: Draw at higher resolution for better sampling
       const hiResW = gridW * 10;
@@ -423,10 +401,46 @@
       canvas.height = hiResH;
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, hiResW, hiResH);
-      // Draw entire image (no cropping) at calculated position/size
-      ctx.drawImage(img, 0, 0, img.width, img.height,
-        Math.round(offsetX * 10), Math.round(offsetY * 10),
-        Math.round(drawW * 10), Math.round(drawH * 10));
+
+      let drawX, drawY, drawW, drawH;
+      let srcX = 0, srcY = 0, srcW = img.width, srcH = img.height;
+
+      if (zoom >= 1) {
+        // Cover mode: fill entire grid, crop if needed
+        if (imgRatio > gridRatio) {
+          // Image wider — crop sides
+          srcH = img.height;
+          srcW = img.height * gridRatio;
+          srcX = (img.width - srcW) * posX;
+          srcY = 0;
+        } else {
+          // Image taller — crop top/bottom
+          srcW = img.width;
+          srcH = img.width / gridRatio;
+          srcX = 0;
+          srcY = (img.height - srcH) * posY;
+        }
+        drawX = 0; drawY = 0; drawW = hiResW; drawH = hiResH;
+      } else {
+        // Contain mode: show entire image, scaled down
+        const areaW = gridW * zoom;
+        const areaH = gridH * zoom;
+        const areaRatio = areaW / areaH;
+        if (imgRatio > areaRatio) {
+          drawW = areaW * 10;
+          drawH = (areaW / imgRatio) * 10;
+        } else {
+          drawH = areaH * 10;
+          drawW = (areaH * imgRatio) * 10;
+        }
+        const maxOffX = hiResW - drawW;
+        const maxOffY = hiResH - drawH;
+        drawX = maxOffX > 0 ? Math.round(maxOffX * posX) : 0;
+        drawY = maxOffY > 0 ? Math.round(maxOffY * posY) : 0;
+      }
+
+      ctx.drawImage(img, srcX, srcY, srcW, srcH,
+        drawX, drawY, Math.round(drawW), Math.round(drawH));
       const hiResData = ctx.getImageData(0, 0, hiResW, hiResH);
       const hiPixels = hiResData.data;
 
