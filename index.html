@@ -429,6 +429,105 @@
     document.getElementById('thresholdSlider').addEventListener('input', processImage);
     document.getElementById('invertToggle').addEventListener('change', processImage);
 
+    // -------------------------------------------------------------------------
+    // Bash script generation and download
+    // -------------------------------------------------------------------------
+
+    function getCommitCount(level, maxCommits) {
+      switch (level) {
+        case 0: return 0;
+        case 1: return 1;
+        case 2: return Math.ceil(maxCommits * 0.25);
+        case 3: return Math.ceil(maxCommits * 0.5);
+        case 4: return maxCommits;
+        default: return 0;
+      }
+    }
+
+    function generateScript() {
+      if (!currentGrid) return;
+
+      const repoUrl = document.getElementById('repoUrl').value.trim();
+      const maxCommits = parseInt(document.getElementById('commitIntensity').value) || 20;
+
+      let script = `#!/bin/bash
+# =============================================================================
+# Git Painter -- Generated Script
+# =============================================================================
+#
+# PREREQUISITES:
+#   1. Create an EMPTY repo on GitHub first (no README, no .gitignore)
+#   2. The repo must NOT be a fork
+#   3. "main" must be the default branch
+#   4. Requires git 2.28+ and bash
+#
+# USAGE:
+#   chmod +x git-painter.sh
+#   ./git-painter.sh
+#
+# =============================================================================
+
+# Set to true to force-push (WARNING: destroys all existing commits in the repo!)
+FORCE_PUSH=false
+
+REPO_URL="${repoUrl || 'https://github.com/YOUR_USER/YOUR_REPO.git'}"
+
+set -e
+
+mkdir -p git-painter-art
+cd git-painter-art
+git init -b main
+
+`;
+
+      // Generate commits for each day
+      currentGrid.forEach(cell => {
+        if (cell.date === null || cell.level <= 0) return;
+        const commits = getCommitCount(cell.level, maxCommits);
+        const d = cell.date;
+        const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+
+        for (let i = 0; i < commits; i++) {
+          script += `echo "${dateStr} ${i}" >> canvas.txt\n`;
+          script += `git add canvas.txt\n`;
+          script += `GIT_AUTHOR_DATE="${dateStr}T12:00:00+0000" GIT_COMMITTER_DATE="${dateStr}T12:00:00+0000" git commit -m "paint" > /dev/null\n`;
+        }
+      });
+
+      script += `
+echo ""
+echo "Done! Commits created."
+echo ""
+
+git remote add origin "$REPO_URL" 2>/dev/null || git remote set-url origin "$REPO_URL"
+
+if [ "$FORCE_PUSH" = true ]; then
+  echo "Force pushing to $REPO_URL ..."
+  git push -u origin main --force
+else
+  echo "Pushing to $REPO_URL ..."
+  git push -u origin main
+fi
+
+echo "Visit your GitHub profile to see the result!"
+`;
+
+      return script;
+    }
+
+    document.getElementById('generateBtn').addEventListener('click', () => {
+      const script = generateScript();
+      if (!script) return;
+
+      const blob = new Blob([script], { type: 'text/x-shellscript' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'git-painter.sh';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
     function loadImage(file) {
       const reader = new FileReader();
       reader.onload = (e) => {
