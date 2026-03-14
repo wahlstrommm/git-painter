@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Git Painter</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 900px;
+      width: 100%;
+    }
+
+    header { margin-bottom: 2rem; }
+    header h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+    header p { color: #8b949e; }
+
+    .upload-zone {
+      border: 2px dashed #30363d;
+      border-radius: 8px;
+      padding: 3rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      margin-bottom: 1.5rem;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: #58a6ff;
+    }
+
+    .controls, .script-settings {
+      margin-bottom: 1.5rem;
+    }
+    .control-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .control-row label {
+      min-width: 140px;
+      color: #8b949e;
+    }
+    .control-row input[type="range"] { flex: 1; }
+    .control-row input[type="text"],
+    .control-row input[type="number"] {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      color: #c9d1d9;
+      padding: 0.4rem 0.6rem;
+      flex: 1;
+    }
+    .control-row select {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      color: #c9d1d9;
+      padding: 0.4rem 0.6rem;
+    }
+
+    .preview-section { margin-bottom: 1.5rem; }
+
+    .graph-wrapper {
+      display: flex;
+      gap: 0.25rem;
+      background: #0d1117;
+      padding: 1rem;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+
+    .day-labels {
+      display: grid;
+      grid-template-rows: repeat(7, 11px);
+      gap: 3px;
+      font-size: 9px;
+      color: #8b949e;
+      padding-top: 20px;
+    }
+    .day-labels span {
+      display: flex;
+      align-items: center;
+      height: 11px;
+    }
+
+    .month-labels {
+      display: flex;
+      font-size: 9px;
+      color: #8b949e;
+      height: 20px;
+      align-items: flex-end;
+      margin-left: 0;
+    }
+
+    .graph-grid {
+      display: grid;
+      grid-template-rows: repeat(7, 11px);
+      grid-auto-flow: column;
+      grid-auto-columns: 11px;
+      gap: 3px;
+    }
+
+    .graph-cell {
+      width: 11px;
+      height: 11px;
+      border-radius: 2px;
+    }
+
+    .graph-cell[data-level="0"], .legend-cell[data-level="0"] { background: #161b22; }
+    .graph-cell[data-level="1"], .legend-cell[data-level="1"] { background: #0e4429; }
+    .graph-cell[data-level="2"], .legend-cell[data-level="2"] { background: #006d32; }
+    .graph-cell[data-level="3"], .legend-cell[data-level="3"] { background: #26a641; }
+    .graph-cell[data-level="4"], .legend-cell[data-level="4"] { background: #39d353; }
+    .graph-cell.empty { background: transparent; }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      justify-content: flex-end;
+      margin-top: 0.5rem;
+      font-size: 10px;
+      color: #8b949e;
+    }
+    .legend-cell {
+      width: 11px;
+      height: 11px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+
+    button#generateBtn {
+      background: #238636;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0.6rem 1.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 0.5rem;
+    }
+    button#generateBtn:hover { background: #2ea043; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Git Painter</h1>
+      <p>Upload an image, paint your GitHub contribution graph.</p>
+    </header>
+
+    <section class="upload-zone" id="uploadZone">
+      <p>Drag &amp; drop an image here, or click to browse</p>
+      <input type="file" id="fileInput" accept="image/*" hidden>
+    </section>
+
+    <section class="controls" id="controls" style="display:none;">
+      <div class="control-row">
+        <label for="yearSelect">Year:</label>
+        <select id="yearSelect"></select>
+      </div>
+      <div class="control-row">
+        <label for="thresholdSlider">Threshold:</label>
+        <input type="range" id="thresholdSlider" min="0" max="100" value="50">
+      </div>
+      <div class="control-row">
+        <label for="invertToggle">Invert:</label>
+        <input type="checkbox" id="invertToggle">
+      </div>
+    </section>
+
+    <section class="preview-section" id="previewSection" style="display:none;">
+      <div class="graph-wrapper">
+        <div class="day-labels">
+          <span></span><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span>
+        </div>
+        <div>
+          <div class="month-labels" id="monthLabels"></div>
+          <div class="graph-grid" id="graphGrid"></div>
+        </div>
+      </div>
+      <div class="legend">
+        <span>Less</span>
+        <span class="legend-cell" data-level="0"></span>
+        <span class="legend-cell" data-level="1"></span>
+        <span class="legend-cell" data-level="2"></span>
+        <span class="legend-cell" data-level="3"></span>
+        <span class="legend-cell" data-level="4"></span>
+        <span>More</span>
+      </div>
+    </section>
+
+    <section class="script-settings" id="scriptSettings" style="display:none;">
+      <div class="control-row">
+        <label for="repoUrl">Repo URL:</label>
+        <input type="text" id="repoUrl" placeholder="https://github.com/user/repo.git">
+      </div>
+      <div class="control-row">
+        <label for="commitIntensity">Max commits (level 4):</label>
+        <input type="number" id="commitIntensity" value="20" min="4" max="100">
+      </div>
+      <button id="generateBtn">Download git-painter.sh</button>
+    </section>
+  </div>
+
+  <canvas id="processingCanvas" hidden></canvas>
+
+  <script>
+    // JS added in subsequent tasks
+  </script>
+</body>
+</html>
