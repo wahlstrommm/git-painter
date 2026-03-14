@@ -356,6 +356,79 @@
       if (file) loadImage(file);
     });
 
+    // -------------------------------------------------------------------------
+    // Image processing — crop-to-fill, grayscale, auto-contrast, quantize
+    // -------------------------------------------------------------------------
+
+    function processImage() {
+      if (!uploadedImageData) return;
+
+      const { cells, totalWeeks } = buildGrid(currentYear);
+      currentGrid = cells;
+
+      let maxCol = 0;
+      cells.forEach(c => { if (c.date && c.col > maxCol) maxCol = c.col; });
+      const gridW = maxCol + 1;
+      const gridH = 7;
+
+      const canvas = document.getElementById('processingCanvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = gridW;
+      canvas.height = gridH;
+
+      // Crop-to-fill (cover mode)
+      const img = uploadedImageData;
+      const imgRatio = img.width / img.height;
+      const gridRatio = gridW / gridH;
+      let sx, sy, sw, sh;
+      if (imgRatio > gridRatio) {
+        sh = img.height; sw = img.height * gridRatio;
+        sx = (img.width - sw) / 2; sy = 0;
+      } else {
+        sw = img.width; sh = img.width / gridRatio;
+        sx = 0; sy = (img.height - sh) / 2;
+      }
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, gridW, gridH);
+
+      const imageData = ctx.getImageData(0, 0, gridW, gridH);
+      const pixels = imageData.data;
+
+      // Grayscale luminance
+      const luminance = [];
+      for (let i = 0; i < pixels.length; i += 4) {
+        luminance.push(0.299 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2]);
+      }
+
+      // Auto-contrast
+      let minL = 255, maxL = 0;
+      luminance.forEach(l => { if (l < minL) minL = l; if (l > maxL) maxL = l; });
+      const range = maxL - minL || 1;
+      const normalized = luminance.map(l => ((l - minL) / range) * 255);
+
+      const threshold = parseInt(document.getElementById('thresholdSlider').value);
+      const invert = document.getElementById('invertToggle').checked;
+      const bias = threshold / 50;
+
+      cells.forEach(cell => {
+        if (cell.date === null) { cell.level = -1; return; }
+        let val = normalized[cell.row * gridW + cell.col] || 0;
+        if (invert) val = 255 - val;
+        val = 255 * Math.pow(val / 255, bias);
+        const darkness = 255 - val;
+        if (darkness < 25) cell.level = 0;
+        else if (darkness < 89) cell.level = 1;
+        else if (darkness < 153) cell.level = 2;
+        else if (darkness < 217) cell.level = 3;
+        else cell.level = 4;
+      });
+
+      renderGrid(cells, totalWeeks, currentYear);
+      updateCommitCount();
+    }
+
+    document.getElementById('thresholdSlider').addEventListener('input', processImage);
+    document.getElementById('invertToggle').addEventListener('change', processImage);
+
     function loadImage(file) {
       const reader = new FileReader();
       reader.onload = (e) => {
