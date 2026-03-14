@@ -391,45 +391,42 @@
       const posX = parseInt(document.getElementById('posXSlider').value) / 100; // 0 - 1
       const posY = parseInt(document.getElementById('posYSlider').value) / 100; // 0 - 1
 
-      // Calculate source rectangle from image
-      // At zoom=1: crop-to-fill (cover). At zoom<1: image is smaller within the grid.
+      // Contain mode: fit entire image within zoomed area, preserving aspect ratio
       const imgRatio = img.width / img.height;
       const gridRatio = gridW / gridH;
 
-      // Base crop (cover mode)
-      let baseSw, baseSh;
-      if (imgRatio > gridRatio) {
-        baseSh = img.height; baseSw = img.height * gridRatio;
+      // How big the image area is on the grid (in grid cells)
+      const areaW = gridW * zoom;
+      const areaH = gridH * zoom;
+      const areaRatio = areaW / areaH;
+
+      // Fit image inside the area (contain)
+      let drawW, drawH;
+      if (imgRatio > areaRatio) {
+        drawW = areaW;
+        drawH = areaW / imgRatio;
       } else {
-        baseSw = img.width; baseSh = img.width / gridRatio;
+        drawH = areaH;
+        drawW = areaH * imgRatio;
       }
 
-      // Apply zoom: smaller zoom = smaller image on grid = larger source area visible
-      // But we want zoom to mean "how big the image appears", so:
-      // zoom=1: image fills grid (cover). zoom=0.5: image is half size, centered
-      const drawW = Math.round(gridW * zoom);
-      const drawH = Math.round(gridH * zoom);
-      // Offset within grid based on position sliders
-      const offsetX = Math.round((gridW - drawW) * posX);
-      const offsetY = Math.round((gridH - drawH) * posY);
+      // Position within grid
+      const maxOffsetX = gridW - drawW;
+      const maxOffsetY = gridH - drawH;
+      const offsetX = maxOffsetX > 0 ? maxOffsetX * posX : 0;
+      const offsetY = maxOffsetY > 0 ? maxOffsetY * posY : 0;
 
       // Step 1: Draw at higher resolution for better sampling
       const hiResW = gridW * 10;
       const hiResH = gridH * 10;
       canvas.width = hiResW;
       canvas.height = hiResH;
-      // Fill with white (= level 0 after processing)
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, hiResW, hiResH);
-      // Draw image at zoomed size and position
-      const hiDrawW = drawW * 10;
-      const hiDrawH = drawH * 10;
-      const hiOffsetX = offsetX * 10;
-      const hiOffsetY = offsetY * 10;
-      // Source: full image cropped to aspect ratio
-      const sx = (img.width - baseSw) / 2;
-      const sy = (img.height - baseSh) / 2;
-      ctx.drawImage(img, sx, sy, baseSw, baseSh, hiOffsetX, hiOffsetY, hiDrawW, hiDrawH);
+      // Draw entire image (no cropping) at calculated position/size
+      ctx.drawImage(img, 0, 0, img.width, img.height,
+        Math.round(offsetX * 10), Math.round(offsetY * 10),
+        Math.round(drawW * 10), Math.round(drawH * 10));
       const hiResData = ctx.getImageData(0, 0, hiResW, hiResH);
       const hiPixels = hiResData.data;
 
