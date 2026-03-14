@@ -182,7 +182,7 @@
       </div>
       <div class="control-row">
         <label for="zoomSlider">Zoom:</label>
-        <input type="range" id="zoomSlider" min="10" max="100" value="100">
+        <input type="range" id="zoomSlider" min="10" max="200" value="100">
       </div>
       <div class="control-row">
         <label for="posXSlider">Position X:</label>
@@ -402,44 +402,29 @@
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, hiResW, hiResH);
 
-      let drawX, drawY, drawW, drawH;
-      let srcX = 0, srcY = 0, srcW = img.width, srcH = img.height;
-
-      if (zoom >= 1) {
-        // Cover mode: fill entire grid, crop if needed
-        if (imgRatio > gridRatio) {
-          // Image wider — crop sides
-          srcH = img.height;
-          srcW = img.height * gridRatio;
-          srcX = (img.width - srcW) * posX;
-          srcY = 0;
-        } else {
-          // Image taller — crop top/bottom
-          srcW = img.width;
-          srcH = img.width / gridRatio;
-          srcX = 0;
-          srcY = (img.height - srcH) * posY;
-        }
-        drawX = 0; drawY = 0; drawW = hiResW; drawH = hiResH;
+      // Contain mode at all zoom levels — fit entire image, then scale by zoom
+      // At zoom=1: image fits exactly inside grid (contain)
+      // At zoom>1: image overflows grid (zoomed in, position controls pan)
+      // At zoom<1: image is smaller with empty space around it
+      let fitW, fitH;
+      if (imgRatio > gridRatio) {
+        fitW = hiResW;
+        fitH = hiResW / imgRatio;
       } else {
-        // Contain mode: show entire image, scaled down
-        const areaW = gridW * zoom;
-        const areaH = gridH * zoom;
-        const areaRatio = areaW / areaH;
-        if (imgRatio > areaRatio) {
-          drawW = areaW * 10;
-          drawH = (areaW / imgRatio) * 10;
-        } else {
-          drawH = areaH * 10;
-          drawW = (areaH * imgRatio) * 10;
-        }
-        const maxOffX = hiResW - drawW;
-        const maxOffY = hiResH - drawH;
-        drawX = maxOffX > 0 ? Math.round(maxOffX * posX) : 0;
-        drawY = maxOffY > 0 ? Math.round(maxOffY * posY) : 0;
+        fitH = hiResH;
+        fitW = hiResH * imgRatio;
       }
 
-      ctx.drawImage(img, srcX, srcY, srcW, srcH,
+      const drawW = fitW * zoom;
+      const drawH = fitH * zoom;
+      // Position: posX/posY control where the image sits
+      // At zoom<=1: moves within grid. At zoom>1: pans the overflow.
+      const maxOffX = hiResW - drawW;
+      const maxOffY = hiResH - drawH;
+      const drawX = Math.round(maxOffX * posX);
+      const drawY = Math.round(maxOffY * posY);
+
+      ctx.drawImage(img, 0, 0, img.width, img.height,
         drawX, drawY, Math.round(drawW), Math.round(drawH));
       const hiResData = ctx.getImageData(0, 0, hiResW, hiResH);
       const hiPixels = hiResData.data;
