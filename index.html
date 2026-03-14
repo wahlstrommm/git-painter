@@ -219,7 +219,110 @@
   <canvas id="processingCanvas" hidden></canvas>
 
   <script>
-    // JS added in subsequent tasks
+    // -------------------------------------------------------------------------
+    // Calendar grid logic
+    // -------------------------------------------------------------------------
+
+    function buildGrid(year) {
+      const startDow = new Date(year, 0, 1).getDay(); // 0=Sun
+      const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+      const totalDays = isLeap ? 366 : 365;
+      const totalWeeks = Math.ceil((startDow + totalDays) / 7);
+      const cells = [];
+
+      for (let col = 0; col < totalWeeks; col++) {
+        for (let row = 0; row < 7; row++) {
+          const dayIndex = col * 7 + row - startDow;
+          if (dayIndex >= 0 && dayIndex < totalDays) {
+            const date = new Date(year, 0, 1 + dayIndex);
+            cells.push({ date, col, row, level: 0 });
+          } else {
+            cells.push({ date: null, col, row, level: -1 });
+          }
+        }
+      }
+      return { cells, totalWeeks };
+    }
+
+    function getMonthLabels(year, totalWeeks) {
+      const labels = [];
+      const startDow = new Date(year, 0, 1).getDay();
+      const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      for (let m = 0; m < 12; m++) {
+        const dayOfYear = Math.round((Date.UTC(year, m, 1) - Date.UTC(year, 0, 1)) / 86400000);
+        const col = Math.floor((dayOfYear + startDow) / 7);
+        labels.push({ name: monthNames[m], col });
+      }
+      return labels;
+    }
+
+    function renderGrid(cells, totalWeeks, year) {
+      const grid = document.getElementById('graphGrid');
+      grid.innerHTML = '';
+      grid.style.gridTemplateColumns = `repeat(${totalWeeks}, 11px)`;
+
+      cells.forEach(cell => {
+        const el = document.createElement('div');
+        el.classList.add('graph-cell');
+        if (cell.date === null) {
+          el.classList.add('empty');
+        } else {
+          el.dataset.level = cell.level;
+        }
+        grid.appendChild(el);
+      });
+
+      const monthContainer = document.getElementById('monthLabels');
+      monthContainer.innerHTML = '';
+      const labels = getMonthLabels(year, totalWeeks);
+      labels.forEach(label => {
+        const span = document.createElement('span');
+        span.textContent = label.name;
+        span.style.position = 'absolute';
+        span.style.left = `${label.col * 14}px`;
+        monthContainer.appendChild(span);
+      });
+      monthContainer.style.position = 'relative';
+      monthContainer.style.width = `${totalWeeks * 14}px`;
+    }
+
+    // -------------------------------------------------------------------------
+    // Year selector
+    // -------------------------------------------------------------------------
+
+    function populateYearSelector() {
+      const select = document.getElementById('yearSelect');
+      const currentYear = new Date().getFullYear();
+      for (let y = currentYear + 1; y >= 2010; y--) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
+        if (y === currentYear) opt.selected = true;
+        select.appendChild(opt);
+      }
+    }
+
+    // Global state
+    let currentGrid = null;
+    let currentYear = new Date().getFullYear();
+    let uploadedImageData = null;
+
+    function updatePreview() {
+      const { cells, totalWeeks } = buildGrid(currentYear);
+      currentGrid = cells;
+      renderGrid(cells, totalWeeks, currentYear);
+    }
+
+    document.getElementById('yearSelect').addEventListener('change', (e) => {
+      currentYear = parseInt(e.target.value);
+      if (uploadedImageData) {
+        processImage();
+      } else {
+        updatePreview();
+      }
+    });
+
+    populateYearSelector();
   </script>
 </body>
 </html>
