@@ -323,6 +323,55 @@
     });
 
     populateYearSelector();
+
+    // -------------------------------------------------------------------------
+    // Image upload — drag-and-drop + click
+    // -------------------------------------------------------------------------
+
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+
+    uploadZone.addEventListener('click', () => fileInput.click());
+
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', () => {
+      uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        loadImage(file);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) loadImage(file);
+    });
+
+    function loadImage(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          uploadedImageData = img;
+          uploadZone.innerHTML = `<p>&#10004; ${file.name} loaded — drag another to replace</p>`;
+          document.getElementById('controls').style.display = '';
+          document.getElementById('previewSection').style.display = '';
+          document.getElementById('scriptSettings').style.display = '';
+          processImage();
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
   </script>
 </body>
 </html>
