@@ -5,12 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Git Painter</title>
   <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --success: #238636;
+      --success-hover: #2ea043;
+      --warning-bg: rgba(210, 153, 34, 0.14);
+      --warning-border: rgba(210, 153, 34, 0.45);
+      --warning-text: #e3b341;
+      --error-bg: rgba(248, 81, 73, 0.14);
+      --error-border: rgba(248, 81, 73, 0.45);
+      --error-text: #ff7b72;
+      --graph-empty: #161b22;
+      --graph-1: #0e4429;
+      --graph-2: #006d32;
+      --graph-3: #26a641;
+      --graph-4: #39d353;
+      --cell-size: 11px;
+      --cell-gap: 3px;
+      --cell-step: 14px;
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-      background: #0d1117;
-      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(88, 166, 255, 0.12), transparent 30%),
+        var(--bg);
+      color: var(--text);
       min-height: 100vh;
       display: flex;
       justify-content: center;
@@ -18,112 +45,294 @@
     }
 
     .container {
-      max-width: 900px;
+      max-width: 980px;
       width: 100%;
     }
 
-    header { margin-bottom: 2rem; }
-    header h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
-    header p { color: #8b949e; }
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .hero-copy {
+      min-width: 0;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    header p {
+      color: var(--muted);
+      max-width: 44rem;
+      line-height: 1.5;
+    }
+
+    .repo-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .repo-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.75rem 0.95rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(22, 27, 34, 0.82);
+      color: var(--text);
+      text-decoration: none;
+      transition: border-color 0.2s, transform 0.2s, background 0.2s;
+      white-space: nowrap;
+    }
+
+    .repo-link:hover {
+      border-color: var(--accent);
+      background: rgba(88, 166, 255, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .repo-link svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+      flex: 0 0 auto;
+    }
+
+    .panel {
+      background: rgba(22, 27, 34, 0.72);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem;
+      box-shadow: 0 18px 60px rgba(1, 4, 9, 0.28);
+      backdrop-filter: blur(10px);
+    }
 
     .upload-zone {
-      border: 2px dashed #30363d;
-      border-radius: 8px;
-      padding: 3rem;
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 3rem 1.5rem;
       text-align: center;
       cursor: pointer;
-      transition: border-color 0.2s;
-      margin-bottom: 1.5rem;
-    }
-    .upload-zone:hover, .upload-zone.dragover {
-      border-color: #58a6ff;
+      transition: border-color 0.2s, background 0.2s, transform 0.2s;
+      margin-bottom: 1.25rem;
     }
 
-    .controls, .script-settings {
-      margin-bottom: 1.5rem;
+    .upload-zone:hover,
+    .upload-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(88, 166, 255, 0.08);
+      transform: translateY(-1px);
     }
+
+    .upload-zone strong {
+      display: block;
+      font-size: 1.05rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .upload-zone span {
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .status {
+      display: none;
+      padding: 0.8rem 0.9rem;
+      border-radius: 10px;
+      margin-bottom: 1.25rem;
+      line-height: 1.5;
+      border: 1px solid transparent;
+    }
+
+    .status.is-visible { display: block; }
+    .status.error {
+      background: var(--error-bg);
+      border-color: var(--error-border);
+      color: var(--error-text);
+    }
+    .status.warning {
+      background: var(--warning-bg);
+      border-color: var(--warning-border);
+      color: var(--warning-text);
+    }
+    .status.info {
+      background: rgba(88, 166, 255, 0.12);
+      border-color: rgba(88, 166, 255, 0.35);
+      color: #9ecbff;
+    }
+
+    .controls,
+    .preview-section,
+    .script-settings {
+      margin-bottom: 1.25rem;
+    }
+
+    .section-title {
+      font-size: 0.95rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.9rem;
+    }
+
     .control-row {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.85rem;
     }
-    .control-row label {
-      min-width: 140px;
-      color: #8b949e;
-    }
-    .control-row input[type="range"] { flex: 1; }
-    .control-row input[type="text"],
-    .control-row input[type="number"] {
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 4px;
-      color: #c9d1d9;
-      padding: 0.4rem 0.6rem;
-      flex: 1;
-    }
-    .control-row select {
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 4px;
-      color: #c9d1d9;
-      padding: 0.4rem 0.6rem;
+    .image-source-row {
+      margin-top: -0.2rem;
+      margin-bottom: 0.9rem;
     }
 
-    .preview-section { margin-bottom: 1.5rem; }
+    .control-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .control-row label {
+      min-width: 140px;
+      color: var(--muted);
+    }
+
+    .control-row input[type="range"] {
+      flex: 1;
+    }
+
+    .control-row input[type="text"],
+    .control-row input[type="number"],
+    .control-row select {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 0.55rem 0.7rem;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .control-row textarea {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 0.7rem;
+      flex: 1;
+      min-width: 0;
+      min-height: 90px;
+      resize: vertical;
+      font: inherit;
+      line-height: 1.45;
+    }
+
+    .control-value {
+      min-width: 56px;
+      text-align: right;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .checkbox-row {
+      justify-content: space-between;
+    }
+
+    .checkbox-row .checkbox-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: var(--text);
+    }
+
+    .checkbox-row label {
+      min-width: auto;
+    }
+
+    .preview-section .panel,
+    .controls.panel,
+    .script-settings.panel {
+      padding: 1rem;
+    }
 
     .graph-wrapper {
       display: flex;
-      gap: 0.25rem;
-      background: #0d1117;
+      gap: 0.45rem;
+      background: var(--bg);
       padding: 1rem;
-      border: 1px solid #30363d;
-      border-radius: 8px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
       overflow-x: auto;
     }
 
     .day-labels {
       display: grid;
-      grid-template-rows: repeat(7, 11px);
-      gap: 3px;
+      grid-template-rows: repeat(7, var(--cell-size));
+      gap: var(--cell-gap);
       font-size: 9px;
-      color: #8b949e;
+      color: var(--muted);
       padding-top: 20px;
+      flex: 0 0 auto;
     }
+
     .day-labels span {
       display: flex;
       align-items: center;
-      height: 11px;
+      height: var(--cell-size);
     }
 
     .month-labels {
-      display: flex;
       font-size: 9px;
-      color: #8b949e;
+      color: var(--muted);
       height: 20px;
-      align-items: flex-end;
-      margin-left: 0;
+      position: relative;
+      margin-bottom: 0.15rem;
+    }
+
+    .month-labels span {
+      position: absolute;
+      top: 0;
     }
 
     .graph-grid {
       display: grid;
-      grid-template-rows: repeat(7, 11px);
+      grid-template-rows: repeat(7, var(--cell-size));
       grid-auto-flow: column;
-      grid-auto-columns: 11px;
-      gap: 3px;
+      grid-auto-columns: var(--cell-size);
+      gap: var(--cell-gap);
     }
 
     .graph-cell {
-      width: 11px;
-      height: 11px;
+      width: var(--cell-size);
+      height: var(--cell-size);
       border-radius: 2px;
+      transition: transform 0.15s ease;
+    }
+    .graph-cell.editable {
+      cursor: crosshair;
+      outline: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    .graph-cell.editable:hover {
+      transform: scale(1.12);
+      outline-color: rgba(88, 166, 255, 0.45);
     }
 
-    .graph-cell[data-level="0"], .legend-cell[data-level="0"] { background: #161b22; }
-    .graph-cell[data-level="1"], .legend-cell[data-level="1"] { background: #0e4429; }
-    .graph-cell[data-level="2"], .legend-cell[data-level="2"] { background: #006d32; }
-    .graph-cell[data-level="3"], .legend-cell[data-level="3"] { background: #26a641; }
-    .graph-cell[data-level="4"], .legend-cell[data-level="4"] { background: #39d353; }
+    .graph-cell[data-level="0"],
+    .legend-cell[data-level="0"] { background: var(--graph-empty); }
+    .graph-cell[data-level="1"],
+    .legend-cell[data-level="1"] { background: var(--graph-1); }
+    .graph-cell[data-level="2"],
+    .legend-cell[data-level="2"] { background: var(--graph-2); }
+    .graph-cell[data-level="3"],
+    .legend-cell[data-level="3"] { background: var(--graph-3); }
+    .graph-cell[data-level="4"],
+    .legend-cell[data-level="4"] { background: var(--graph-4); }
     .graph-cell.empty { background: transparent; }
 
     .legend {
@@ -131,112 +340,1062 @@
       align-items: center;
       gap: 4px;
       justify-content: flex-end;
-      margin-top: 0.5rem;
+      margin-top: 0.65rem;
       font-size: 10px;
-      color: #8b949e;
+      color: var(--muted);
     }
+
     .legend-cell {
-      width: 11px;
-      height: 11px;
+      width: var(--cell-size);
+      height: var(--cell-size);
       border-radius: 2px;
       display: inline-block;
     }
 
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.75rem;
+      margin-top: 0.85rem;
+    }
+
+    .stat {
+      padding: 0.8rem;
+      border-radius: 10px;
+      background: rgba(13, 17, 23, 0.8);
+      border: 1px solid var(--border);
+    }
+
+    .stat-label {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .stat-value {
+      font-size: 1.15rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .helper-text {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.45;
+      margin-top: 0.55rem;
+    }
+
+    .button-row {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      flex-wrap: wrap;
+      margin-top: 0.9rem;
+    }
+
+    .mode-note {
+      color: var(--muted);
+      font-size: 0.85rem;
+      line-height: 1.4;
+      margin-top: -0.2rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .hidden {
+      display: none;
+    }
+    .palette {
+      display: flex;
+      gap: 0.55rem;
+      flex-wrap: wrap;
+    }
+    .palette button {
+      min-width: 44px;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+    }
+    .palette button.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.35) inset;
+    }
+    .palette-swatch {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      vertical-align: middle;
+    }
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+      gap: 0.65rem;
+      width: 100%;
+    }
+    .preset-card {
+      background: rgba(13, 17, 23, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      padding: 0.65rem 0.55rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.45rem;
+      min-height: 88px;
+    }
+    .preset-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.35) inset;
+    }
+    .preset-mini {
+      display: grid;
+      gap: 1px;
+    }
+    .preset-mini span {
+      width: 5px;
+      height: 5px;
+      border-radius: 1px;
+      background: transparent;
+    }
+    .preset-mini span.on {
+      background: var(--graph-4);
+    }
+    .preset-name {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    button,
     button#generateBtn {
-      background: #238636;
+      background: var(--success);
       color: #fff;
       border: none;
-      border-radius: 6px;
-      padding: 0.6rem 1.5rem;
+      border-radius: 8px;
+      padding: 0.8rem 1.35rem;
       font-size: 1rem;
       cursor: pointer;
-      margin-top: 0.5rem;
+      transition: background 0.2s, transform 0.2s;
     }
-    button#generateBtn:hover { background: #2ea043; }
+
+    button:hover,
+    button#generateBtn:hover {
+      background: var(--success-hover);
+      transform: translateY(-1px);
+    }
+
+    button:disabled,
+    button#generateBtn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .button-row button.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.35) inset;
+    }
+
+    @media (max-width: 720px) {
+      body {
+        padding: 1rem;
+      }
+
+      header {
+        flex-direction: column;
+      }
+
+      .repo-actions {
+        justify-content: flex-start;
+      }
+
+      .control-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .control-row label {
+        min-width: 0;
+      }
+
+      .control-value {
+        text-align: left;
+        min-width: 0;
+      }
+
+      .checkbox-row {
+        align-items: flex-start;
+      }
+
+      .graph-wrapper {
+        padding: 0.8rem;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>Git Painter</h1>
-      <p>Upload an image, paint your GitHub contribution graph.</p>
+      <div class="hero-copy">
+        <h1>Git Painter</h1>
+        <p>Turn images, text, presets, and hand-drawn sketches into GitHub contribution art, then export a script that rebuilds the result with backdated commits. If you like the project, star it on GitHub.</p>
+      </div>
+      <div class="repo-actions hidden" id="repoActions">
+        <a class="repo-link" id="viewSourceLink" href="#" target="_blank" rel="noreferrer">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.67 0 8.2c0 3.63 2.29 6.71 5.47 7.8.4.08.55-.18.55-.39 0-.19-.01-.82-.01-1.49-2.01.38-2.53-.5-2.69-.96-.09-.24-.48-.96-.82-1.16-.28-.15-.68-.52-.01-.53.63-.01 1.08.59 1.23.84.72 1.24 1.87.89 2.33.68.07-.54.28-.89.5-1.09-1.78-.21-3.64-.91-3.64-4.04 0-.89.31-1.62.82-2.19-.08-.21-.36-1.04.08-2.16 0 0 .67-.22 2.2.84a7.36 7.36 0 0 1 4 0c1.53-1.06 2.2-.84 2.2-.84.44 1.12.16 1.95.08 2.16.51.57.82 1.29.82 2.19 0 3.14-1.87 3.83-3.65 4.04.29.25.54.73.54 1.49 0 1.08-.01 1.95-.01 2.22 0 .22.15.48.55.39A8.21 8.21 0 0 0 16 8.2C16 3.67 12.42 0 8 0Z"></path></svg>
+          <span>View Source</span>
+        </a>
+        <a class="repo-link" id="starRepoLink" href="#" target="_blank" rel="noreferrer">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 .25 10.08 5l5.17.44-3.92 3.39 1.18 5.03L8 11.2l-4.51 2.66 1.18-5.03L.75 5.44 5.92 5 8 .25Z"></path></svg>
+          <span>Star on GitHub</span>
+        </a>
+      </div>
     </header>
 
-    <section class="upload-zone" id="uploadZone">
-      <p>Drag &amp; drop an image here, or click to browse</p>
+    <section class="panel upload-zone" id="uploadZone">
+      <strong>Drop an image here</strong>
+      <span>Or click to browse. Processing stays in your browser.</span>
       <input type="file" id="fileInput" accept="image/*" hidden>
     </section>
 
-    <section class="controls" id="controls" style="display:none;">
+    <div id="statusMessage" class="status" aria-live="polite"></div>
+
+    <section class="controls panel" id="controls">
+      <h2 class="section-title">Design Controls</h2>
       <div class="control-row">
-        <label for="yearSelect">Year:</label>
+        <label for="inputMode">Mode</label>
+        <select id="inputMode">
+          <option value="image">Image</option>
+          <option value="text">Text</option>
+          <option value="preset">Preset</option>
+          <option value="draw">Draw</option>
+        </select>
+      </div>
+      <p class="mode-note" id="modeNote">Image mode maps an uploaded picture onto the contribution grid.</p>
+      <div id="imageControls">
+        <div class="control-row image-source-row">
+          <label for="imageUploadBtn">Source</label>
+          <button type="button" id="imageUploadBtn">Choose image</button>
+        </div>
+      </div>
+      <div id="textControls" class="hidden" aria-hidden="true">
+        <div class="control-row">
+          <label for="textInput">Text</label>
+          <textarea id="textInput" maxlength="24" placeholder="TYPE HERE">HELLO</textarea>
+        </div>
+        <div class="control-row">
+          <label for="textStyle">Style</label>
+          <select id="textStyle">
+            <option value="pixel">Pixel</option>
+            <option value="bold">Bold</option>
+            <option value="slanted">Slanted</option>
+          </select>
+        </div>
+        <div class="control-row">
+          <label for="textScale">Scale</label>
+          <input type="range" id="textScale" min="60" max="220" value="100">
+          <output class="control-value" id="textScaleValue" for="textScale">100%</output>
+        </div>
+        <div class="control-row">
+          <label for="letterSpacing">Letter spacing</label>
+          <input type="range" id="letterSpacing" min="0" max="4" value="1">
+          <output class="control-value" id="letterSpacingValue" for="letterSpacing">1</output>
+        </div>
+      </div>
+      <div id="presetControls" class="hidden" aria-hidden="true">
+        <div class="control-row">
+          <label for="textPreset">Preset</label>
+          <select id="textPreset">
+            <option value="heart">Heart</option>
+            <option value="star">Star</option>
+            <option value="smiley">Smiley</option>
+            <option value="lightning">Lightning</option>
+            <option value="moon">Moon</option>
+            <option value="check">Check</option>
+            <option value="arrow">Arrow</option>
+            <option value="diamond">Diamond</option>
+            <option value="cat">Cat</option>
+            <option value="rocket">Rocket</option>
+            <option value="crown">Crown</option>
+            <option value="flame">Flame</option>
+            <option value="sun">Sun</option>
+            <option value="tree">Tree</option>
+            <option value="coffee">Coffee</option>
+          </select>
+        </div>
+        <div class="control-row">
+          <label>Gallery</label>
+          <div class="preset-grid" id="presetGrid"></div>
+        </div>
+        <div class="control-row">
+          <label>Collection</label>
+          <div class="helper-text">Quick motifs for badges, icons and small symbols that survive the narrow grid better than photos.</div>
+        </div>
+      </div>
+      <div id="drawControls" class="hidden" aria-hidden="true">
+        <div class="control-row">
+          <label for="drawPresetSelect">Stamp preset</label>
+          <select id="drawPresetSelect"></select>
+        </div>
+        <div class="control-row">
+          <label>Brush</label>
+          <div class="palette" id="drawPalette">
+            <button type="button" data-level="0" class="active"><span class="palette-swatch legend-cell" data-level="0"></span></button>
+            <button type="button" data-level="1"><span class="palette-swatch legend-cell" data-level="1"></span></button>
+            <button type="button" data-level="2"><span class="palette-swatch legend-cell" data-level="2"></span></button>
+            <button type="button" data-level="3"><span class="palette-swatch legend-cell" data-level="3"></span></button>
+            <button type="button" data-level="4"><span class="palette-swatch legend-cell" data-level="4"></span></button>
+          </div>
+        </div>
+        <div class="control-row">
+          <label>Canvas</label>
+          <div class="button-row">
+            <button type="button" id="stampPresetBtn">Stamp</button>
+            <button type="button" id="fillDrawBtn">Fill</button>
+            <button type="button" id="undoDrawBtn">Undo</button>
+            <button type="button" id="redoDrawBtn">Redo</button>
+            <button type="button" id="lineDrawBtn">Line</button>
+            <button type="button" id="mirrorDrawBtn">Mirror</button>
+            <button type="button" id="clearDrawBtn">Clear</button>
+          </div>
+        </div>
+      </div>
+      <div class="control-row">
+        <label for="yearSelect">Year</label>
         <select id="yearSelect"></select>
       </div>
       <div class="control-row">
-        <label for="thresholdSlider">Threshold:</label>
+        <label for="thresholdSlider">Threshold</label>
         <input type="range" id="thresholdSlider" min="0" max="100" value="50">
+        <output class="control-value" id="thresholdValue" for="thresholdSlider">50%</output>
+      </div>
+      <div class="control-row checkbox-row">
+        <label for="invertToggle">Invert</label>
+        <div class="checkbox-wrap">
+          <input type="checkbox" id="invertToggle">
+          <span>Swap light and dark areas</span>
+        </div>
       </div>
       <div class="control-row">
-        <label for="invertToggle">Invert:</label>
-        <input type="checkbox" id="invertToggle">
-      </div>
-      <div class="control-row">
-        <label for="zoomSlider">Zoom:</label>
+        <label for="zoomSlider">Zoom</label>
         <input type="range" id="zoomSlider" min="10" max="200" value="100">
+        <output class="control-value" id="zoomValue" for="zoomSlider">100%</output>
       </div>
       <div class="control-row">
-        <label for="posXSlider">Position X:</label>
+        <label for="posXSlider">Position X</label>
         <input type="range" id="posXSlider" min="0" max="100" value="50">
+        <output class="control-value" id="posXValue" for="posXSlider">50%</output>
       </div>
       <div class="control-row">
-        <label for="posYSlider">Position Y:</label>
+        <label for="posYSlider">Position Y</label>
         <input type="range" id="posYSlider" min="0" max="100" value="50">
+        <output class="control-value" id="posYValue" for="posYSlider">50%</output>
       </div>
     </section>
 
-    <section class="preview-section" id="previewSection" style="display:none;">
-      <div class="graph-wrapper">
-        <div class="day-labels">
-          <span></span><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span>
+    <section class="preview-section" id="previewSection">
+      <div class="panel">
+        <h2 class="section-title">Preview</h2>
+        <div class="graph-wrapper">
+          <div class="day-labels" aria-hidden="true">
+            <span></span><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span>
+          </div>
+          <div>
+            <div class="month-labels" id="monthLabels" aria-hidden="true"></div>
+            <div class="graph-grid" id="graphGrid" aria-label="Contribution graph preview"></div>
+          </div>
         </div>
-        <div>
-          <div class="month-labels" id="monthLabels"></div>
-          <div class="graph-grid" id="graphGrid"></div>
+        <div class="legend">
+          <span>Less</span>
+          <span class="legend-cell" data-level="0"></span>
+          <span class="legend-cell" data-level="1"></span>
+          <span class="legend-cell" data-level="2"></span>
+          <span class="legend-cell" data-level="3"></span>
+          <span class="legend-cell" data-level="4"></span>
+          <span>More</span>
         </div>
-      </div>
-      <div class="legend">
-        <span>Less</span>
-        <span class="legend-cell" data-level="0"></span>
-        <span class="legend-cell" data-level="1"></span>
-        <span class="legend-cell" data-level="2"></span>
-        <span class="legend-cell" data-level="3"></span>
-        <span class="legend-cell" data-level="4"></span>
-        <span>More</span>
+        <div class="stats">
+          <div class="stat">
+            <span class="stat-label">Total commits</span>
+            <span class="stat-value" id="commitCount">0</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Active days</span>
+            <span class="stat-value" id="activeDays">0</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Coverage</span>
+            <span class="stat-value" id="coveragePercent">0%</span>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="script-settings" id="scriptSettings" style="display:none;">
+    <section class="script-settings panel" id="scriptSettings">
+      <h2 class="section-title">Script Output</h2>
       <div class="control-row">
-        <label for="repoUrl">Repo URL:</label>
+        <label for="repoUrl">Repo URL</label>
         <input type="text" id="repoUrl" placeholder="https://github.com/user/repo.git">
       </div>
       <div class="control-row">
-        <label for="commitIntensity">Max commits (level 4):</label>
+        <label for="commitIntensity">Max commits (level 4)</label>
         <input type="number" id="commitIntensity" value="20" min="4" max="100">
       </div>
-      <button id="generateBtn">Download git-painter.sh</button>
+      <div class="control-row checkbox-row">
+        <label for="forcePushToggle">Overwrite remote</label>
+        <div class="checkbox-wrap">
+          <input type="checkbox" id="forcePushToggle">
+          <span>Allow force-push if the target repo already has history</span>
+        </div>
+      </div>
+      <p class="helper-text">Use a new, non-fork repository with <code>main</code> as the default branch. If `Overwrite remote` is enabled, the generated script will ask for confirmation before force-pushing and replacing remote history.</p>
+      <div class="button-row">
+        <button id="generateBtn">Download git-painter.sh</button>
+      </div>
     </section>
   </div>
 
   <canvas id="processingCanvas" hidden></canvas>
 
   <script>
-    // -------------------------------------------------------------------------
-    // Calendar grid logic
-    // -------------------------------------------------------------------------
+    const CELL_STEP = 14;
+    const PROJECT_URL = "https://github.com/wahlstrommm/git-painter";
+
+    const elements = {
+      uploadZone: document.getElementById("uploadZone"),
+      fileInput: document.getElementById("fileInput"),
+      imageUploadBtn: document.getElementById("imageUploadBtn"),
+      controls: document.getElementById("controls"),
+      previewSection: document.getElementById("previewSection"),
+      scriptSettings: document.getElementById("scriptSettings"),
+      statusMessage: document.getElementById("statusMessage"),
+      repoActions: document.getElementById("repoActions"),
+      viewSourceLink: document.getElementById("viewSourceLink"),
+      starRepoLink: document.getElementById("starRepoLink"),
+      inputMode: document.getElementById("inputMode"),
+      modeNote: document.getElementById("modeNote"),
+      imageControls: document.getElementById("imageControls"),
+      textControls: document.getElementById("textControls"),
+      presetControls: document.getElementById("presetControls"),
+      presetGrid: document.getElementById("presetGrid"),
+      drawControls: document.getElementById("drawControls"),
+      drawPresetSelect: document.getElementById("drawPresetSelect"),
+      drawPalette: document.getElementById("drawPalette"),
+      stampPresetBtn: document.getElementById("stampPresetBtn"),
+      fillDrawBtn: document.getElementById("fillDrawBtn"),
+      undoDrawBtn: document.getElementById("undoDrawBtn"),
+      redoDrawBtn: document.getElementById("redoDrawBtn"),
+      lineDrawBtn: document.getElementById("lineDrawBtn"),
+      mirrorDrawBtn: document.getElementById("mirrorDrawBtn"),
+      clearDrawBtn: document.getElementById("clearDrawBtn"),
+      textPreset: document.getElementById("textPreset"),
+      textInput: document.getElementById("textInput"),
+      textStyle: document.getElementById("textStyle"),
+      textScale: document.getElementById("textScale"),
+      textScaleValue: document.getElementById("textScaleValue"),
+      letterSpacing: document.getElementById("letterSpacing"),
+      letterSpacingValue: document.getElementById("letterSpacingValue"),
+      graphGrid: document.getElementById("graphGrid"),
+      monthLabels: document.getElementById("monthLabels"),
+      yearSelect: document.getElementById("yearSelect"),
+      thresholdSlider: document.getElementById("thresholdSlider"),
+      thresholdValue: document.getElementById("thresholdValue"),
+      invertToggle: document.getElementById("invertToggle"),
+      zoomSlider: document.getElementById("zoomSlider"),
+      zoomValue: document.getElementById("zoomValue"),
+      posXSlider: document.getElementById("posXSlider"),
+      posXValue: document.getElementById("posXValue"),
+      posYSlider: document.getElementById("posYSlider"),
+      posYValue: document.getElementById("posYValue"),
+      repoUrl: document.getElementById("repoUrl"),
+      commitIntensity: document.getElementById("commitIntensity"),
+      forcePushToggle: document.getElementById("forcePushToggle"),
+      generateBtn: document.getElementById("generateBtn"),
+      processingCanvas: document.getElementById("processingCanvas"),
+      commitCount: document.getElementById("commitCount"),
+      activeDays: document.getElementById("activeDays"),
+      coveragePercent: document.getElementById("coveragePercent")
+    };
+
+    let currentGrid = null;
+    let currentYear = new Date().getFullYear();
+    let uploadedImageData = null;
+    let currentMode = "image";
+    let drawBrushLevel = 0;
+    let drawTool = "paint";
+    let drawLineStartIndex = null;
+    let isDrawing = false;
+    const drawStates = new Map();
+    const drawHistory = new Map();
+    const drawRedo = new Map();
+
+    const FONT_5X7 = {
+      "A": [
+        "01110",
+        "10001",
+        "10001",
+        "11111",
+        "10001",
+        "10001",
+        "10001"
+      ],
+      "B": [
+        "11110",
+        "10001",
+        "10001",
+        "11110",
+        "10001",
+        "10001",
+        "11110"
+      ],
+      "C": [
+        "01110",
+        "10001",
+        "10000",
+        "10000",
+        "10000",
+        "10001",
+        "01110"
+      ],
+      "D": [
+        "11110",
+        "10001",
+        "10001",
+        "10001",
+        "10001",
+        "10001",
+        "11110"
+      ],
+      "E": [
+        "11111",
+        "10000",
+        "10000",
+        "11110",
+        "10000",
+        "10000",
+        "11111"
+      ],
+      "F": [
+        "11111",
+        "10000",
+        "10000",
+        "11110",
+        "10000",
+        "10000",
+        "10000"
+      ],
+      "G": [
+        "01110",
+        "10001",
+        "10000",
+        "10111",
+        "10001",
+        "10001",
+        "01111"
+      ],
+      "H": [
+        "10001",
+        "10001",
+        "10001",
+        "11111",
+        "10001",
+        "10001",
+        "10001"
+      ],
+      "I": [
+        "11111",
+        "00100",
+        "00100",
+        "00100",
+        "00100",
+        "00100",
+        "11111"
+      ],
+      "J": [
+        "00111",
+        "00010",
+        "00010",
+        "00010",
+        "10010",
+        "10010",
+        "01100"
+      ],
+      "K": [
+        "10001",
+        "10010",
+        "10100",
+        "11000",
+        "10100",
+        "10010",
+        "10001"
+      ],
+      "L": [
+        "10000",
+        "10000",
+        "10000",
+        "10000",
+        "10000",
+        "10000",
+        "11111"
+      ],
+      "M": [
+        "10001",
+        "11011",
+        "10101",
+        "10101",
+        "10001",
+        "10001",
+        "10001"
+      ],
+      "N": [
+        "10001",
+        "10001",
+        "11001",
+        "10101",
+        "10011",
+        "10001",
+        "10001"
+      ],
+      "O": [
+        "01110",
+        "10001",
+        "10001",
+        "10001",
+        "10001",
+        "10001",
+        "01110"
+      ],
+      "P": [
+        "11110",
+        "10001",
+        "10001",
+        "11110",
+        "10000",
+        "10000",
+        "10000"
+      ],
+      "Q": [
+        "01110",
+        "10001",
+        "10001",
+        "10001",
+        "10101",
+        "10010",
+        "01101"
+      ],
+      "R": [
+        "11110",
+        "10001",
+        "10001",
+        "11110",
+        "10100",
+        "10010",
+        "10001"
+      ],
+      "S": [
+        "01111",
+        "10000",
+        "10000",
+        "01110",
+        "00001",
+        "00001",
+        "11110"
+      ],
+      "T": [
+        "11111",
+        "00100",
+        "00100",
+        "00100",
+        "00100",
+        "00100",
+        "00100"
+      ],
+      "U": [
+        "10001",
+        "10001",
+        "10001",
+        "10001",
+        "10001",
+        "10001",
+        "01110"
+      ],
+      "V": [
+        "10001",
+        "10001",
+        "10001",
+        "10001",
+        "10001",
+        "01010",
+        "00100"
+      ],
+      "W": [
+        "10001",
+        "10001",
+        "10001",
+        "10101",
+        "10101",
+        "10101",
+        "01010"
+      ],
+      "X": [
+        "10001",
+        "10001",
+        "01010",
+        "00100",
+        "01010",
+        "10001",
+        "10001"
+      ],
+      "Y": [
+        "10001",
+        "10001",
+        "01010",
+        "00100",
+        "00100",
+        "00100",
+        "00100"
+      ],
+      "Z": [
+        "11111",
+        "00001",
+        "00010",
+        "00100",
+        "01000",
+        "10000",
+        "11111"
+      ],
+      "0": [
+        "01110",
+        "10001",
+        "10011",
+        "10101",
+        "11001",
+        "10001",
+        "01110"
+      ],
+      "1": [
+        "00100",
+        "01100",
+        "00100",
+        "00100",
+        "00100",
+        "00100",
+        "01110"
+      ],
+      "2": [
+        "01110",
+        "10001",
+        "00001",
+        "00010",
+        "00100",
+        "01000",
+        "11111"
+      ],
+      "3": [
+        "11110",
+        "00001",
+        "00001",
+        "00110",
+        "00001",
+        "00001",
+        "11110"
+      ],
+      "4": [
+        "00010",
+        "00110",
+        "01010",
+        "10010",
+        "11111",
+        "00010",
+        "00010"
+      ],
+      "5": [
+        "11111",
+        "10000",
+        "10000",
+        "11110",
+        "00001",
+        "00001",
+        "11110"
+      ],
+      "6": [
+        "01110",
+        "10000",
+        "10000",
+        "11110",
+        "10001",
+        "10001",
+        "01110"
+      ],
+      "7": [
+        "11111",
+        "00001",
+        "00010",
+        "00100",
+        "01000",
+        "01000",
+        "01000"
+      ],
+      "8": [
+        "01110",
+        "10001",
+        "10001",
+        "01110",
+        "10001",
+        "10001",
+        "01110"
+      ],
+      "9": [
+        "01110",
+        "10001",
+        "10001",
+        "01111",
+        "00001",
+        "00001",
+        "01110"
+      ],
+      "!": [
+        "00100",
+        "00100",
+        "00100",
+        "00100",
+        "00100",
+        "00000",
+        "00100"
+      ],
+      "?": [
+        "01110",
+        "10001",
+        "00001",
+        "00010",
+        "00100",
+        "00000",
+        "00100"
+      ],
+      "&": [
+        "01100",
+        "10010",
+        "10100",
+        "01000",
+        "10101",
+        "10010",
+        "01101"
+      ],
+      ".": [
+        "00000",
+        "00000",
+        "00000",
+        "00000",
+        "00000",
+        "00110",
+        "00110"
+      ],
+      "-": [
+        "00000",
+        "00000",
+        "00000",
+        "11111",
+        "00000",
+        "00000",
+        "00000"
+      ],
+      "/": [
+        "00001",
+        "00010",
+        "00100",
+        "01000",
+        "10000",
+        "00000",
+        "00000"
+      ],
+      " ": [
+        "000",
+        "000",
+        "000",
+        "000",
+        "000",
+        "000",
+        "000"
+      ]
+    };
+
+    const SHAPE_PRESETS = {
+      heart: [
+        "00100100",
+        "01111110",
+        "11111111",
+        "11111111",
+        "01111110",
+        "00111100",
+        "00011000"
+      ],
+      star: [
+        "001010100",
+        "101111101",
+        "011111110",
+        "001111100",
+        "011111110",
+        "101111101",
+        "001010100"
+      ],
+      smiley: [
+        "001111100",
+        "010000010",
+        "100100001",
+        "100000001",
+        "100100001",
+        "010011010",
+        "001111100"
+      ],
+      lightning: [
+        "00011000",
+        "00110000",
+        "01100000",
+        "11111100",
+        "00111110",
+        "00011100",
+        "00111000"
+      ],
+      moon: [
+        "0011110",
+        "0110001",
+        "1100000",
+        "1100000",
+        "1100000",
+        "0110001",
+        "0011110"
+      ],
+      check: [
+        "000000001",
+        "000000011",
+        "000000110",
+        "100001100",
+        "110011000",
+        "011110000",
+        "001100000"
+      ],
+      arrow: [
+        "00000100000",
+        "00001100000",
+        "11111111111",
+        "11111111111",
+        "11111111111",
+        "00001100000",
+        "00000100000"
+      ],
+      diamond: [
+        "000010000",
+        "000111000",
+        "001111100",
+        "011111110",
+        "001111100",
+        "000111000",
+        "000010000"
+      ],
+      cat: [
+        "01000000010",
+        "11100100111",
+        "11111111111",
+        "10111111101",
+        "10100100101",
+        "10011111001",
+        "01100000110"
+      ],
+      rocket: [
+        "000010000",
+        "000111000",
+        "001111100",
+        "001111100",
+        "001111100",
+        "001010100",
+        "010000010"
+      ],
+      crown: [
+        "101000101",
+        "111101111",
+        "011111110",
+        "001111100",
+        "111111111",
+        "111111111",
+        "011111110"
+      ],
+      flame: [
+        "0001000",
+        "0011100",
+        "0011000",
+        "0111100",
+        "1111110",
+        "0111100",
+        "0011000"
+      ],
+      sun: [
+        "001010100",
+        "000111000",
+        "101111101",
+        "011111110",
+        "101111101",
+        "000111000",
+        "001010100"
+      ],
+      tree: [
+        "000010000",
+        "000111000",
+        "001111100",
+        "000111000",
+        "001111100",
+        "000010000",
+        "000010000"
+      ],
+      coffee: [
+        "0000000000",
+        "0111111000",
+        "1111111110",
+        "1111111111",
+        "1111111110",
+        "0111111001",
+        "0011111110"
+      ]
+    };
+
+    function escapeHtml(value) {
+      return value.replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function setStatus(message, type = "info") {
+      elements.statusMessage.textContent = message;
+      elements.statusMessage.className = `status is-visible ${type}`;
+    }
+
+    function clearStatus() {
+      elements.statusMessage.textContent = "";
+      elements.statusMessage.className = "status";
+    }
+
+    function clampNumber(value, min, max, fallback) {
+      const parsed = Number(value);
+      if (!Number.isFinite(parsed)) return fallback;
+      return Math.min(max, Math.max(min, parsed));
+    }
+
+    function shellEscape(value) {
+      return `'${String(value).replace(/'/g, `'\\''`)}'`;
+    }
+
+    function isValidRepoUrl(value) {
+      return /^(https:\/\/github\.com\/[\w.-]+\/[\w.-]+(?:\.git)?|git@github\.com:[\w.-]+\/[\w.-]+(?:\.git)?)$/.test(value);
+    }
 
     function buildGrid(year) {
-      const startDow = new Date(year, 0, 1).getDay(); // 0=Sun
+      const startDow = new Date(year, 0, 1).getDay();
       const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
       const totalDays = isLeap ? 366 : 365;
       const totalWeeks = Math.ceil((startDow + totalDays) / 7);
@@ -253,245 +1412,480 @@
           }
         }
       }
+
       return { cells, totalWeeks };
     }
 
-    function getMonthLabels(year, totalWeeks) {
+    function getMonthLabels(year) {
       const labels = [];
       const startDow = new Date(year, 0, 1).getDay();
-      const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      for (let m = 0; m < 12; m++) {
-        const dayOfYear = Math.round((Date.UTC(year, m, 1) - Date.UTC(year, 0, 1)) / 86400000);
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+      for (let month = 0; month < 12; month++) {
+        const dayOfYear = Math.round((Date.UTC(year, month, 1) - Date.UTC(year, 0, 1)) / 86400000);
         const col = Math.floor((dayOfYear + startDow) / 7);
-        labels.push({ name: monthNames[m], col });
+        labels.push({ name: monthNames[month], col });
       }
+
       return labels;
     }
 
     function renderGrid(cells, totalWeeks, year) {
-      const grid = document.getElementById('graphGrid');
-      grid.innerHTML = '';
-      grid.style.gridTemplateColumns = `repeat(${totalWeeks}, 11px)`;
+      elements.graphGrid.innerHTML = "";
+      elements.graphGrid.style.gridTemplateColumns = `repeat(${totalWeeks}, var(--cell-size))`;
 
-      cells.forEach(cell => {
-        const el = document.createElement('div');
-        el.classList.add('graph-cell');
+      cells.forEach((cell, index) => {
+        const el = document.createElement("div");
+        el.classList.add("graph-cell");
+
         if (cell.date === null) {
-          el.classList.add('empty');
+          el.classList.add("empty");
         } else {
-          el.dataset.level = cell.level;
+          el.dataset.level = String(cell.level);
+          el.dataset.index = String(index);
+          el.title = `${cell.date.toISOString().slice(0, 10)} • level ${cell.level}`;
+          if (currentMode === "draw") el.classList.add("editable");
         }
-        grid.appendChild(el);
+
+        elements.graphGrid.appendChild(el);
       });
 
-      const monthContainer = document.getElementById('monthLabels');
-      monthContainer.innerHTML = '';
-      const labels = getMonthLabels(year, totalWeeks);
-      labels.forEach(label => {
-        const span = document.createElement('span');
+      elements.monthLabels.innerHTML = "";
+      const labels = getMonthLabels(year);
+
+      labels.forEach((label) => {
+        const span = document.createElement("span");
         span.textContent = label.name;
-        span.style.position = 'absolute';
-        span.style.left = `${label.col * 14}px`;
-        monthContainer.appendChild(span);
+        span.style.left = `${label.col * CELL_STEP}px`;
+        elements.monthLabels.appendChild(span);
       });
-      monthContainer.style.position = 'relative';
-      monthContainer.style.width = `${totalWeeks * 14}px`;
+
+      elements.monthLabels.style.width = `${totalWeeks * CELL_STEP}px`;
     }
 
-    // -------------------------------------------------------------------------
-    // Year selector
-    // -------------------------------------------------------------------------
+    function buildDrawGrid(year) {
+      const { cells, totalWeeks } = buildGrid(year);
+      const key = String(year);
+      if (!drawStates.has(key)) {
+        drawStates.set(key, cells.map((cell) => (cell.date ? 0 : -1)));
+      }
+      if (!drawHistory.has(key)) {
+        drawHistory.set(key, []);
+      }
+      if (!drawRedo.has(key)) {
+        drawRedo.set(key, []);
+      }
+      const savedLevels = drawStates.get(key);
+      cells.forEach((cell, index) => {
+        if (cell.date !== null) cell.level = savedLevels[index] ?? 0;
+      });
+      return { cells, totalWeeks };
+    }
+
+    function getGridDimensions(cells) {
+      let maxCol = 0;
+      cells.forEach((cell) => {
+        if (cell.date && cell.col > maxCol) maxCol = cell.col;
+      });
+      return { gridW: maxCol + 1, gridH: 7 };
+    }
+
+    function syncDrawStateFromGrid() {
+      if (currentMode !== "draw" || !currentGrid) return;
+      drawStates.set(String(currentYear), currentGrid.map((cell) => (cell.date ? cell.level : -1)));
+    }
+
+    function pushDrawHistory() {
+      const key = String(currentYear);
+      if (!currentGrid) return;
+      const history = drawHistory.get(key) || [];
+      history.push(currentGrid.map((cell) => (cell.date ? cell.level : -1)));
+      if (history.length > 50) history.shift();
+      drawHistory.set(key, history);
+      drawRedo.set(key, []);
+    }
+
+    function restoreDrawState(levels) {
+      if (!levels) return;
+      drawStates.set(String(currentYear), [...levels]);
+      const { cells, totalWeeks } = buildDrawGrid(currentYear);
+      currentGrid = cells;
+      renderGrid(cells, totalWeeks, currentYear);
+      updateStats();
+    }
 
     function populateYearSelector() {
-      const select = document.getElementById('yearSelect');
-      const currentYear = new Date().getFullYear();
-      for (let y = currentYear + 1; y >= 2010; y--) {
-        const opt = document.createElement('option');
-        opt.value = y;
-        opt.textContent = y;
-        if (y === currentYear) opt.selected = true;
-        select.appendChild(opt);
+      const currentCalendarYear = new Date().getFullYear();
+      for (let year = currentCalendarYear + 1; year >= 2010; year--) {
+        const opt = document.createElement("option");
+        opt.value = String(year);
+        opt.textContent = String(year);
+        if (year === currentCalendarYear) opt.selected = true;
+        elements.yearSelect.appendChild(opt);
       }
     }
 
-    // Global state
-    let currentGrid = null;
-    let currentYear = new Date().getFullYear();
-    let uploadedImageData = null;
-
-    function updatePreview() {
-      const { cells, totalWeeks } = buildGrid(currentYear);
-      currentGrid = cells;
-      renderGrid(cells, totalWeeks, currentYear);
+    function updateSliderDisplays() {
+      elements.thresholdValue.textContent = `${elements.thresholdSlider.value}%`;
+      elements.zoomValue.textContent = `${elements.zoomSlider.value}%`;
+      elements.posXValue.textContent = `${elements.posXSlider.value}%`;
+      elements.posYValue.textContent = `${elements.posYSlider.value}%`;
+      elements.textScaleValue.textContent = `${elements.textScale.value}%`;
+      elements.letterSpacingValue.textContent = elements.letterSpacing.value;
     }
 
-    document.getElementById('yearSelect').addEventListener('change', (e) => {
-      currentYear = parseInt(e.target.value);
-      if (uploadedImageData) {
-        processImage();
-      } else {
-        updatePreview();
+    function populatePresetSelectors() {
+      const options = Object.keys(SHAPE_PRESETS).map((name) => (
+        `<option value="${name}">${formatPresetLabel(name)}</option>`
+      )).join("");
+      elements.textPreset.innerHTML = options;
+      elements.drawPresetSelect.innerHTML = options;
+      elements.textPreset.value = "smiley";
+      elements.drawPresetSelect.value = "smiley";
+    }
+
+    function updateModeUI() {
+      const isImageMode = currentMode === "image";
+      const isTextMode = currentMode === "text";
+      const isPresetMode = currentMode === "preset";
+      const isDrawMode = currentMode === "draw";
+      elements.imageControls.classList.toggle("hidden", !isImageMode);
+      elements.textControls.classList.toggle("hidden", !isTextMode);
+      elements.presetControls.classList.toggle("hidden", !isPresetMode);
+      elements.drawControls.classList.toggle("hidden", !isDrawMode);
+      elements.textControls.setAttribute("aria-hidden", String(!isTextMode));
+      elements.presetControls.setAttribute("aria-hidden", String(!isPresetMode));
+      elements.drawControls.setAttribute("aria-hidden", String(!isDrawMode));
+      elements.uploadZone.style.display = isImageMode ? "" : "none";
+      [elements.thresholdSlider, elements.invertToggle, elements.zoomSlider, elements.posXSlider, elements.posYSlider].forEach((input) => {
+        const row = input.closest(".control-row");
+        if (row) row.classList.toggle("hidden", isPresetMode);
+      });
+      elements.modeNote.textContent = isImageMode
+        ? "Image mode maps an uploaded picture onto the contribution grid."
+        : isTextMode
+          ? "Text mode uses a built-in 5x7 bitmap font with Pixel, Bold, and Slanted styles."
+          : isPresetMode
+            ? "Preset mode uses hand-tuned 7-row motifs that match the contribution grid exactly."
+            : "Draw mode lets you stamp presets, then paint over them by hand with levels 0-4.";
+    }
+
+    function getActiveSourceLabel() {
+      if (currentMode === "draw") {
+        return "drawing ready";
       }
-    });
-
-    populateYearSelector();
-
-    // -------------------------------------------------------------------------
-    // Image upload — drag-and-drop + click
-    // -------------------------------------------------------------------------
-
-    const uploadZone = document.getElementById('uploadZone');
-    const fileInput = document.getElementById('fileInput');
-
-    uploadZone.addEventListener('click', () => fileInput.click());
-
-    uploadZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      uploadZone.classList.add('dragover');
-    });
-
-    uploadZone.addEventListener('dragleave', () => {
-      uploadZone.classList.remove('dragover');
-    });
-
-    uploadZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      uploadZone.classList.remove('dragover');
-      const file = e.dataTransfer.files[0];
-      if (file && file.type.startsWith('image/')) {
-        loadImage(file);
+      if (currentMode === "preset") {
+        return `${elements.textPreset.value} preset ready`;
       }
-    });
+      if (currentMode === "text") {
+        return elements.textInput.value.trim() ? "text ready" : "text missing";
+      }
+      return uploadedImageData ? "image ready" : "image missing";
+    }
 
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) loadImage(file);
-    });
+    function inferProjectUrl() {
+      const ownerMatch = window.location.hostname.match(/^([^.]+)\.github\.io$/);
+      const pathParts = window.location.pathname.split("/").filter(Boolean);
 
-    // -------------------------------------------------------------------------
-    // Image processing — crop-to-fill, grayscale, auto-contrast, quantize
-    // -------------------------------------------------------------------------
-
-    function processImage() {
-      if (!uploadedImageData) return;
-
-      const { cells, totalWeeks } = buildGrid(currentYear);
-      currentGrid = cells;
-
-      let maxCol = 0;
-      cells.forEach(c => { if (c.date && c.col > maxCol) maxCol = c.col; });
-      const gridW = maxCol + 1;
-      const gridH = 7;
-
-      const canvas = document.getElementById('processingCanvas');
-      const ctx = canvas.getContext('2d');
-
-      const img = uploadedImageData;
-      const zoom = parseInt(document.getElementById('zoomSlider').value) / 100; // 0.1 - 1.0
-      const posX = parseInt(document.getElementById('posXSlider').value) / 100; // 0 - 1
-      const posY = parseInt(document.getElementById('posYSlider').value) / 100; // 0 - 1
-
-      const imgRatio = img.width / img.height;
-      const gridRatio = gridW / gridH;
-
-      // Step 1: Draw at higher resolution for better sampling
-      const hiResW = gridW * 10;
-      const hiResH = gridH * 10;
-      canvas.width = hiResW;
-      canvas.height = hiResH;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, hiResW, hiResH);
-
-      // Contain mode at all zoom levels — fit entire image, then scale by zoom
-      // At zoom=1: image fits exactly inside grid (contain)
-      // At zoom>1: image overflows grid (zoomed in, position controls pan)
-      // At zoom<1: image is smaller with empty space around it
-      let fitW, fitH;
-      if (imgRatio > gridRatio) {
-        fitW = hiResW;
-        fitH = hiResW / imgRatio;
-      } else {
-        fitH = hiResH;
-        fitW = hiResH * imgRatio;
+      if (ownerMatch && pathParts[0]) {
+        return `https://github.com/${ownerMatch[1]}/${pathParts[0]}`;
       }
 
-      const drawW = fitW * zoom;
-      const drawH = fitH * zoom;
-      // Position: posX/posY control where the image sits
-      // At zoom<=1: moves within grid. At zoom>1: pans the overflow.
-      const maxOffX = hiResW - drawW;
-      const maxOffY = hiResH - drawH;
-      const drawX = Math.round(maxOffX * posX);
-      const drawY = Math.round(maxOffY * posY);
-
-      ctx.drawImage(img, 0, 0, img.width, img.height,
-        drawX, drawY, Math.round(drawW), Math.round(drawH));
-      const hiResData = ctx.getImageData(0, 0, hiResW, hiResH);
-      const hiPixels = hiResData.data;
-
-      // Step 2: Convert to grayscale at high res
-      const hiLum = new Float32Array(hiResW * hiResH);
-      for (let i = 0; i < hiPixels.length; i += 4) {
-        hiLum[i / 4] = 0.299 * hiPixels[i] + 0.587 * hiPixels[i + 1] + 0.114 * hiPixels[i + 2];
+      if (window.location.hostname === "github.com" && pathParts.length >= 2) {
+        return `https://github.com/${pathParts[0]}/${pathParts[1]}`;
       }
 
-      // Step 3: Downsample to grid size by averaging blocks
-      const cellW = hiResW / gridW;
-      const cellH = hiResH / gridH;
-      const luminance = new Float32Array(gridW * gridH);
+      return "";
+    }
+
+    function updateProjectLinks() {
+      const projectUrl = (PROJECT_URL || inferProjectUrl()).replace(/\.git$/, "");
+      const hasProjectUrl = Boolean(projectUrl);
+      elements.repoActions.classList.toggle("hidden", !hasProjectUrl);
+      if (!hasProjectUrl) return;
+      elements.viewSourceLink.href = projectUrl;
+      elements.starRepoLink.href = `${projectUrl}/stargazers`;
+    }
+
+    function normalizeTextInput(value) {
+      return value
+        .toUpperCase()
+        .replace(/[^\w\s!?&.\-\/]/g, " ")
+        .replace(/_/g, " ")
+        .replace(/\r/g, "")
+        .slice(0, 24);
+    }
+
+    function getGlyph(char) {
+      return FONT_5X7[char] || FONT_5X7["?"];
+    }
+
+    function formatPresetLabel(name) {
+      return name.charAt(0).toUpperCase() + name.slice(1);
+    }
+
+    function getActiveTextBitmap() {
+      if (currentMode === "preset" && SHAPE_PRESETS[elements.textPreset.value]) {
+        const preset = elements.textPreset.value;
+        return SHAPE_PRESETS[preset].map((row) => row.split(""));
+      }
+      return buildTextBitmap(elements.textInput.value, elements.textStyle.value, clampNumber(elements.letterSpacing.value, 0, 4, 1));
+    }
+
+    function rasterizePresetBitmap(bitmap, gridW, gridH) {
+      const sourceH = bitmap.length;
+      const sourceW = bitmap.reduce((max, row) => Math.max(max, row.length), 0) || 1;
+      const originX = Math.floor((gridW - sourceW) / 2);
+      const originY = Math.floor((gridH - sourceH) / 2);
+      const raster = Array.from({ length: gridH }, () => Array(gridW).fill(0));
+
       for (let gy = 0; gy < gridH; gy++) {
         for (let gx = 0; gx < gridW; gx++) {
-          let sum = 0, count = 0;
-          const startX = Math.floor(gx * cellW);
-          const endX = Math.floor((gx + 1) * cellW);
-          const startY = Math.floor(gy * cellH);
-          const endY = Math.floor((gy + 1) * cellH);
-          for (let y = startY; y < endY; y++) {
-            for (let x = startX; x < endX; x++) {
-              sum += hiLum[y * hiResW + x];
-              count++;
-            }
+          const localX = gx - originX;
+          const localY = gy - originY;
+          if (localX < 0 || localY < 0 || localX >= sourceW || localY >= sourceH) continue;
+          if (bitmap[localY] && bitmap[localY][localX] === "1") {
+            raster[gy][gx] = 1;
           }
-          luminance[gy * gridW + gx] = sum / (count || 1);
         }
       }
 
-      // Auto-contrast
-      let minL = 255, maxL = 0;
-      luminance.forEach(l => { if (l < minL) minL = l; if (l > maxL) maxL = l; });
-      const range = maxL - minL || 1;
-      const normalized = luminance.map(l => ((l - minL) / range) * 255);
-
-      const threshold = parseInt(document.getElementById('thresholdSlider').value);
-      const invert = document.getElementById('invertToggle').checked;
-      const bias = Math.max(threshold / 50, 0.1);
-
-      cells.forEach(cell => {
-        if (cell.date === null) { cell.level = -1; return; }
-        let val = normalized[cell.row * gridW + cell.col] || 0;
-        if (invert) val = 255 - val;
-        val = 255 * Math.pow(val / 255, bias);
-        const darkness = 255 - val;
-        if (darkness < 25) cell.level = 0;
-        else if (darkness < 89) cell.level = 1;
-        else if (darkness < 153) cell.level = 2;
-        else if (darkness < 217) cell.level = 3;
-        else cell.level = 4;
-      });
-
-      renderGrid(cells, totalWeeks, currentYear);
-      updateCommitCount();
+      return raster;
     }
 
-    document.getElementById('thresholdSlider').addEventListener('input', processImage);
-    document.getElementById('invertToggle').addEventListener('change', processImage);
-    document.getElementById('zoomSlider').addEventListener('input', processImage);
-    document.getElementById('posXSlider').addEventListener('input', processImage);
-    document.getElementById('posYSlider').addEventListener('input', processImage);
+    function cropRaster(raster) {
+      let minX = Infinity;
+      let maxX = -1;
+      let minY = Infinity;
+      let maxY = -1;
 
-    // -------------------------------------------------------------------------
-    // Bash script generation and download
-    // -------------------------------------------------------------------------
+      for (let y = 0; y < raster.length; y++) {
+        for (let x = 0; x < raster[y].length; x++) {
+          if (!raster[y][x]) continue;
+          minX = Math.min(minX, x);
+          maxX = Math.max(maxX, x);
+          minY = Math.min(minY, y);
+          maxY = Math.max(maxY, y);
+        }
+      }
+
+      if (maxX === -1) return [[0]];
+
+      const cropped = [];
+      for (let y = minY; y <= maxY; y++) {
+        cropped.push(raster[y].slice(minX, maxX + 1));
+      }
+      return cropped;
+    }
+
+    function renderPresetCards() {
+      elements.presetGrid.innerHTML = "";
+      Object.entries(SHAPE_PRESETS).forEach(([name, rawBitmap]) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "preset-card";
+        button.dataset.preset = name;
+        if (elements.textPreset.value === name) button.classList.add("active");
+
+        const bitmap = rawBitmap.map((row) => row.split(""));
+        const miniRaster = cropRaster(rasterizePresetBitmap(bitmap, bitmap[0].length, bitmap.length));
+
+        const mini = document.createElement("div");
+        mini.className = "preset-mini";
+        mini.style.gridTemplateColumns = `repeat(${miniRaster[0].length}, 5px)`;
+
+        miniRaster.forEach((row) => {
+          row.forEach((bit) => {
+            const pixel = document.createElement("span");
+            if (bit === 1) pixel.classList.add("on");
+            mini.appendChild(pixel);
+          });
+        });
+
+        const label = document.createElement("div");
+        label.className = "preset-name";
+        label.textContent = formatPresetLabel(name);
+
+        button.appendChild(mini);
+        button.appendChild(label);
+        button.addEventListener("click", () => {
+          elements.textPreset.value = name;
+          elements.drawPresetSelect.value = name;
+          renderPresetCards();
+          if (ensureSourceReady()) processGridSource();
+        });
+
+        elements.presetGrid.appendChild(button);
+      });
+    }
+
+    function applyPresetBitmapToCells(cells, bitmap) {
+      const { gridW, gridH } = getGridDimensions(cells);
+      const raster = rasterizePresetBitmap(bitmap, gridW, gridH);
+
+      cells.forEach((cell) => {
+        if (cell.date === null) {
+          cell.level = -1;
+          return;
+        }
+        cell.level = raster[cell.row] && raster[cell.row][cell.col] === 1 ? 4 : 0;
+      });
+    }
+
+    function setDrawTool(tool) {
+      drawTool = tool;
+      if (tool !== "line") drawLineStartIndex = null;
+      elements.stampPresetBtn.classList.toggle("active", tool === "stamp");
+      elements.fillDrawBtn.classList.toggle("active", tool === "fill");
+      elements.lineDrawBtn.classList.toggle("active", tool === "line");
+    }
+
+    function stampPresetAt(index, presetName) {
+      if (currentMode !== "draw" || !currentGrid) return;
+      const rawBitmap = SHAPE_PRESETS[presetName];
+      const anchorCell = currentGrid[index];
+      if (!rawBitmap || !anchorCell || anchorCell.date === null) return;
+
+      const bitmap = rawBitmap.map((row) => row.split(""));
+      const height = bitmap.length;
+      const width = bitmap.reduce((max, row) => Math.max(max, row.length), 0);
+      const originCol = anchorCell.col - Math.floor(width / 2);
+      const originRow = anchorCell.row - Math.floor(height / 2);
+      const indexByPosition = new Map();
+
+      currentGrid.forEach((cell, cellIndex) => {
+        if (cell.date !== null) indexByPosition.set(`${cell.col}:${cell.row}`, cellIndex);
+      });
+
+      bitmap.forEach((row, rowIndex) => {
+        row.forEach((bit, colIndex) => {
+          if (bit !== "1") return;
+          const cellIndex = indexByPosition.get(`${originCol + colIndex}:${originRow + rowIndex}`);
+          if (cellIndex === undefined) return;
+          currentGrid[cellIndex].level = 4;
+        });
+      });
+
+      syncDrawStateFromGrid();
+      renderGrid(currentGrid, Math.max(...currentGrid.map((cell) => cell.col)) + 1, currentYear);
+      updateStats();
+    }
+
+    function buildTextBitmap(text, style, spacing) {
+      const safeText = normalizeTextInput(text) || "HELLO";
+      const lines = safeText.split("\n").slice(0, 2);
+      const bitmap = [];
+
+      lines.forEach((line, lineIndex) => {
+        const chars = line.split("");
+        const rowBlocks = Array.from({ length: 7 }, () => []);
+
+        chars.forEach((char, charIndex) => {
+          const glyph = getGlyph(char);
+          const glyphWidth = glyph[0].length;
+
+          for (let row = 0; row < 7; row++) {
+            rowBlocks[row].push(...glyph[row].split(""));
+            if (charIndex < chars.length - 1) {
+              for (let gap = 0; gap < spacing; gap++) rowBlocks[row].push("0");
+            }
+          }
+
+          if (style === "slanted" && charIndex < chars.length - 1) {
+            for (let row = 0; row < 7; row++) {
+              while (rowBlocks[row].length < (charIndex + 1) * (glyphWidth + spacing)) {
+                rowBlocks[row].push("0");
+              }
+            }
+          }
+        });
+
+        const transformed = rowBlocks.map((rowData, rowIndex) => {
+          if (style === "bold") {
+            const expanded = [...rowData];
+            for (let i = rowData.length - 1; i >= 0; i--) {
+              if (rowData[i] === "1" && i + 1 < expanded.length) expanded[i + 1] = "1";
+            }
+            return expanded;
+          }
+
+          if (style === "slanted") {
+            const offset = Math.floor((6 - rowIndex) / 2);
+            return [...Array(offset).fill("0"), ...rowData];
+          }
+
+          return rowData;
+        });
+
+        transformed.forEach((rowData) => bitmap.push(rowData));
+
+        if (lineIndex < lines.length - 1) {
+          bitmap.push(new Array(transformed[0].length).fill("0"));
+        }
+      });
+
+      const width = bitmap.reduce((max, row) => Math.max(max, row.length), 0);
+      return bitmap.map((row) => {
+        const next = [...row];
+        while (next.length < width) next.push("0");
+        return next;
+      });
+    }
+
+    function drawTextToCanvas(gridW, gridH) {
+      const canvas = elements.processingCanvas;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      const hiResW = gridW * 10;
+      const hiResH = gridH * 10;
+      const scale = clampNumber(elements.textScale.value, 60, 220, 100) / 100;
+      const bitmap = getActiveTextBitmap();
+      const sourceH = bitmap.length;
+      const sourceW = bitmap.reduce((max, row) => Math.max(max, row.length), 0) || 1;
+
+      canvas.width = hiResW;
+      canvas.height = hiResH;
+      ctx.clearRect(0, 0, hiResW, hiResH);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, hiResW, hiResH);
+      ctx.fillStyle = "#000000";
+
+      const pixelSize = Math.max(1, Math.floor(Math.min(hiResW / sourceW, hiResH / sourceH) * scale));
+      const drawW = sourceW * pixelSize;
+      const drawH = sourceH * pixelSize;
+      const posX = clampNumber(elements.posXSlider.value, 0, 100, 50) / 100;
+      const posY = clampNumber(elements.posYSlider.value, 0, 100, 50) / 100;
+      const drawX = Math.round((hiResW - drawW) * posX);
+      const drawY = Math.round((hiResH - drawH) * posY);
+
+      for (let y = 0; y < bitmap.length; y++) {
+        for (let x = 0; x < bitmap[y].length; x++) {
+          if (bitmap[y][x] !== "1") continue;
+          ctx.fillRect(drawX + x * pixelSize, drawY + y * pixelSize, pixelSize, pixelSize);
+        }
+      }
+
+      return ctx.getImageData(0, 0, hiResW, hiResH).data;
+    }
+
+    function updatePreview() {
+      const { cells, totalWeeks } = currentMode === "draw" ? buildDrawGrid(currentYear) : buildGrid(currentYear);
+      currentGrid = cells;
+      renderGrid(cells, totalWeeks, currentYear);
+      updateStats();
+    }
+
+    function ensureSourceReady() {
+      if (currentMode === "draw") {
+        return true;
+      }
+      if (currentMode === "preset") {
+        return Boolean(SHAPE_PRESETS[elements.textPreset.value]);
+      }
+      if (currentMode === "text") {
+        return normalizeTextInput(elements.textInput.value).trim().length > 0;
+      }
+      return Boolean(uploadedImageData);
+    }
 
     function getCommitCount(level, maxCommits) {
       switch (level) {
@@ -504,14 +1898,270 @@
       }
     }
 
-    function generateScript() {
+    function updateStats() {
       if (!currentGrid) return;
 
-      const repoUrlRaw = document.getElementById('repoUrl').value.trim();
-      const repoUrl = repoUrlRaw.replace(/[^a-zA-Z0-9_.:\/@\-]/g, '');
-      const maxCommits = parseInt(document.getElementById('commitIntensity').value) || 20;
+      const maxCommits = clampNumber(elements.commitIntensity.value, 4, 100, 20);
+      const datedCells = currentGrid.filter((cell) => cell.date !== null);
+      const activeDays = datedCells.filter((cell) => cell.level > 0).length;
+      const totalCommits = datedCells.reduce((sum, cell) => sum + getCommitCount(cell.level, maxCommits), 0);
+      const coverage = datedCells.length ? (activeDays / datedCells.length) * 100 : 0;
 
-      let script = `#!/bin/bash
+      elements.commitCount.textContent = totalCommits.toLocaleString();
+      elements.activeDays.textContent = activeDays.toLocaleString();
+      elements.coveragePercent.textContent = `${coverage.toFixed(1)}%`;
+    }
+
+    function processGridSource() {
+      if (currentMode === "draw") {
+        const { cells, totalWeeks } = buildDrawGrid(currentYear);
+        currentGrid = cells;
+        renderGrid(cells, totalWeeks, currentYear);
+        updateStats();
+        return;
+      }
+
+      const { cells, totalWeeks } = buildGrid(currentYear);
+      currentGrid = cells;
+
+      if (currentMode === "preset") {
+        applyPresetBitmapToCells(cells, getActiveTextBitmap());
+        renderGrid(cells, totalWeeks, currentYear);
+        updateStats();
+        return;
+      }
+
+      const { gridW, gridH } = getGridDimensions(cells);
+      const canvas = elements.processingCanvas;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      const hiResW = gridW * 10;
+      const hiResH = gridH * 10;
+      let hiPixels;
+
+      if (currentMode === "text") {
+        hiPixels = drawTextToCanvas(gridW, gridH);
+      } else {
+        if (!uploadedImageData) return;
+        const img = uploadedImageData;
+        const zoom = clampNumber(elements.zoomSlider.value, 10, 200, 100) / 100;
+        const posX = clampNumber(elements.posXSlider.value, 0, 100, 50) / 100;
+        const posY = clampNumber(elements.posYSlider.value, 0, 100, 50) / 100;
+        const imgRatio = img.width / img.height;
+        const gridRatio = gridW / gridH;
+
+        canvas.width = hiResW;
+        canvas.height = hiResH;
+        ctx.clearRect(0, 0, hiResW, hiResH);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, hiResW, hiResH);
+
+        let fitW;
+        let fitH;
+        if (imgRatio > gridRatio) {
+          fitW = hiResW;
+          fitH = hiResW / imgRatio;
+        } else {
+          fitH = hiResH;
+          fitW = hiResH * imgRatio;
+        }
+
+        const drawW = fitW * zoom;
+        const drawH = fitH * zoom;
+        const maxOffX = hiResW - drawW;
+        const maxOffY = hiResH - drawH;
+        const drawX = Math.round(maxOffX * posX);
+        const drawY = Math.round(maxOffY * posY);
+
+        ctx.drawImage(img, 0, 0, img.width, img.height, drawX, drawY, Math.round(drawW), Math.round(drawH));
+        hiPixels = ctx.getImageData(0, 0, hiResW, hiResH).data;
+      }
+
+      const hiLum = new Float32Array(hiResW * hiResH);
+
+      for (let i = 0; i < hiPixels.length; i += 4) {
+        hiLum[i / 4] = 0.299 * hiPixels[i] + 0.587 * hiPixels[i + 1] + 0.114 * hiPixels[i + 2];
+      }
+
+      const cellW = hiResW / gridW;
+      const cellH = hiResH / gridH;
+      const luminance = new Float32Array(gridW * gridH);
+
+      for (let gy = 0; gy < gridH; gy++) {
+        for (let gx = 0; gx < gridW; gx++) {
+          let sum = 0;
+          let count = 0;
+          const startX = Math.floor(gx * cellW);
+          const endX = Math.floor((gx + 1) * cellW);
+          const startY = Math.floor(gy * cellH);
+          const endY = Math.floor((gy + 1) * cellH);
+
+          for (let y = startY; y < endY; y++) {
+            for (let x = startX; x < endX; x++) {
+              sum += hiLum[y * hiResW + x];
+              count++;
+            }
+          }
+
+          luminance[gy * gridW + gx] = sum / (count || 1);
+        }
+      }
+
+      let minL = 255;
+      let maxL = 0;
+      luminance.forEach((value) => {
+        if (value < minL) minL = value;
+        if (value > maxL) maxL = value;
+      });
+
+      const range = maxL - minL || 1;
+      const threshold = clampNumber(elements.thresholdSlider.value, 0, 100, 50);
+      const invert = elements.invertToggle.checked;
+      const bias = Math.max(threshold / 50, 0.1);
+
+      cells.forEach((cell) => {
+        if (cell.date === null) {
+          cell.level = -1;
+          return;
+        }
+
+        let value = ((luminance[cell.row * gridW + cell.col] - minL) / range) * 255;
+        if (invert) value = 255 - value;
+        value = 255 * Math.pow(value / 255, bias);
+        const darkness = 255 - value;
+
+        if (darkness < 25) cell.level = 0;
+        else if (darkness < 89) cell.level = 1;
+        else if (darkness < 153) cell.level = 2;
+        else if (darkness < 217) cell.level = 3;
+        else cell.level = 4;
+      });
+
+      renderGrid(cells, totalWeeks, currentYear);
+      updateStats();
+    }
+
+    function setDrawBrush(level) {
+      drawBrushLevel = level;
+      setDrawTool("paint");
+      elements.drawPalette.querySelectorAll("button").forEach((button) => {
+        button.classList.toggle("active", Number(button.dataset.level) === level);
+      });
+    }
+
+    function applyDrawToCell(index) {
+      if (currentMode !== "draw" || !currentGrid) return;
+      const cell = currentGrid[index];
+      if (!cell || cell.date === null) return;
+      cell.level = drawBrushLevel;
+      syncDrawStateFromGrid();
+      const el = elements.graphGrid.querySelector(`[data-index="${index}"]`);
+      if (el) el.dataset.level = String(drawBrushLevel);
+      updateStats();
+    }
+
+    function floodFillDraw(startIndex) {
+      if (currentMode !== "draw" || !currentGrid) return;
+      const startCell = currentGrid[startIndex];
+      if (!startCell || startCell.date === null) return;
+      const targetLevel = startCell.level;
+      if (targetLevel === drawBrushLevel) return;
+
+      const indexByPosition = new Map();
+      currentGrid.forEach((cell, index) => {
+        if (cell.date !== null) indexByPosition.set(`${cell.col}:${cell.row}`, index);
+      });
+
+      const queue = [startIndex];
+      const visited = new Set(queue);
+      while (queue.length > 0) {
+        const index = queue.shift();
+        const cell = currentGrid[index];
+        if (!cell || cell.date === null || cell.level !== targetLevel) continue;
+        cell.level = drawBrushLevel;
+        const neighbors = [
+          [cell.col - 1, cell.row],
+          [cell.col + 1, cell.row],
+          [cell.col, cell.row - 1],
+          [cell.col, cell.row + 1]
+        ];
+        neighbors.forEach(([col, row]) => {
+          const key = `${col}:${row}`;
+          const nextIndex = indexByPosition.get(key);
+          if (nextIndex === undefined || visited.has(nextIndex)) return;
+          visited.add(nextIndex);
+          queue.push(nextIndex);
+        });
+      }
+
+      syncDrawStateFromGrid();
+      renderGrid(currentGrid, Math.max(...currentGrid.map((cell) => cell.col)) + 1, currentYear);
+      updateStats();
+    }
+
+    function drawLineBetween(startIndex, endIndex) {
+      if (currentMode !== "draw" || !currentGrid) return;
+      const startCell = currentGrid[startIndex];
+      const endCell = currentGrid[endIndex];
+      if (!startCell || !endCell || startCell.date === null || endCell.date === null) return;
+
+      const indexByPosition = new Map();
+      currentGrid.forEach((cell, index) => {
+        if (cell.date !== null) indexByPosition.set(`${cell.col}:${cell.row}`, index);
+      });
+
+      let x0 = startCell.col;
+      let y0 = startCell.row;
+      const x1 = endCell.col;
+      const y1 = endCell.row;
+      const dx = Math.abs(x1 - x0);
+      const dy = Math.abs(y1 - y0);
+      const sx = x0 < x1 ? 1 : -1;
+      const sy = y0 < y1 ? 1 : -1;
+      let err = dx - dy;
+
+      while (true) {
+        const index = indexByPosition.get(`${x0}:${y0}`);
+        if (index !== undefined) currentGrid[index].level = drawBrushLevel;
+        if (x0 === x1 && y0 === y1) break;
+        const e2 = err * 2;
+        if (e2 > -dy) {
+          err -= dy;
+          x0 += sx;
+        }
+        if (e2 < dx) {
+          err += dx;
+          y0 += sy;
+        }
+      }
+
+      syncDrawStateFromGrid();
+      renderGrid(currentGrid, Math.max(...currentGrid.map((cell) => cell.col)) + 1, currentYear);
+      updateStats();
+    }
+
+    function mirrorDrawGrid() {
+      if (currentMode !== "draw" || !currentGrid) return;
+      const byPosition = new Map();
+      let maxCol = 0;
+
+      currentGrid.forEach((cell, index) => {
+        if (cell.date === null) return;
+        byPosition.set(`${cell.col}:${cell.row}`, { index, level: cell.level });
+        if (cell.col > maxCol) maxCol = cell.col;
+      });
+
+      const nextLevels = currentGrid.map((cell) => (cell.date ? 0 : -1));
+      currentGrid.forEach((cell, index) => {
+        if (cell.date === null) return;
+        const mirrored = byPosition.get(`${maxCol - cell.col}:${cell.row}`);
+        nextLevels[index] = mirrored ? mirrored.level : 0;
+      });
+
+      restoreDrawState(nextLevels);
+    }
+
+    function buildScriptHeader(repoUrl, maxCommits, forcePushDefault) {
+      return `#!/bin/bash
 # =============================================================================
 # Git Painter -- Generated Script
 # =============================================================================
@@ -528,35 +2178,86 @@
 #
 # =============================================================================
 
-# Set to true to force-push (WARNING: destroys all existing commits in the repo!)
-FORCE_PUSH=false
+set -euo pipefail
 
-REPO_URL="${repoUrl || 'https://github.com/YOUR_USER/YOUR_REPO.git'}"
+# Set to true to rebuild the local folder and force-push the result.
+# WARNING: this deletes the local git-painter-art/ folder and overwrites remote history.
+FORCE_PUSH=${forcePushDefault ? "true" : "false"}
 
-set -e
+REPO_URL=${shellEscape(repoUrl)}
+TARGET_DIR="git-painter-art"
 
-if [ -d "git-painter-art/.git" ]; then
-  echo "Error: git-painter-art/ already exists. Delete it first or set FORCE_PUSH=true."
+if [ "$FORCE_PUSH" = true ] && [ -d "$TARGET_DIR" ]; then
+  rm -rf "$TARGET_DIR"
+fi
+
+if [ -d "$TARGET_DIR/.git" ]; then
+  echo "Error: $TARGET_DIR/ already exists. Delete it first or set FORCE_PUSH=true."
   exit 1
 fi
 
-mkdir -p git-painter-art
-cd git-painter-art
+if ! git config --get user.name >/dev/null || ! git config --get user.email >/dev/null; then
+  echo "Error: git user.name and user.email must be configured before running this script."
+  echo "Run:"
+  echo "  git config --global user.name \\"Your Name\\""
+  echo "  git config --global user.email \\"you@example.com\\""
+  exit 1
+fi
+
+mkdir -p "$TARGET_DIR"
+cd "$TARGET_DIR"
 git init -b main
-
 `;
+    }
 
-      // Generate commits for each day
-      currentGrid.forEach(cell => {
+    function generateScript() {
+      if (!currentGrid || !ensureSourceReady()) {
+        setStatus(currentMode === "preset"
+          ? "Choose a preset before generating a script."
+          : currentMode === "text"
+            ? "Enter some text before generating a script."
+            : currentMode === "draw"
+              ? "Draw something or keep the grid empty before generating a script."
+            : "Upload an image before generating a script.", "warning");
+        return null;
+      }
+
+      const repoUrl = elements.repoUrl.value.trim();
+      if (!repoUrl) {
+        setStatus("Enter your GitHub repository URL before downloading the script.", "warning");
+        elements.repoUrl.focus();
+        return null;
+      }
+
+      if (!isValidRepoUrl(repoUrl)) {
+        setStatus("Repository URL must be a GitHub HTTPS or SSH URL, for example https://github.com/user/repo.git or git@github.com:user/repo.git.", "error");
+        elements.repoUrl.focus();
+        return null;
+      }
+
+      const maxCommits = clampNumber(elements.commitIntensity.value, 4, 100, 20);
+      const forcePushDefault = elements.forcePushToggle.checked;
+      elements.commitIntensity.value = String(maxCommits);
+
+      let script = buildScriptHeader(repoUrl, maxCommits, forcePushDefault);
+
+      currentGrid.forEach((cell) => {
         if (cell.date === null || cell.level <= 0) return;
+
         const commits = getCommitCount(cell.level, maxCommits);
-        const d = cell.date;
-        const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        const dateStr = [
+          cell.date.getFullYear(),
+          String(cell.date.getMonth() + 1).padStart(2, "0"),
+          String(cell.date.getDate()).padStart(2, "0")
+        ].join("-");
 
         for (let i = 0; i < commits; i++) {
-          script += `echo "${dateStr} ${i}" >> canvas.txt\n`;
-          script += `git add canvas.txt\n`;
-          script += `GIT_AUTHOR_DATE="${dateStr}T12:00:00+0000" GIT_COMMITTER_DATE="${dateStr}T12:00:00+0000" git commit -m "paint" > /dev/null\n`;
+          const hour = String(12 + Math.floor(i / 60)).padStart(2, "0");
+          const minute = String(i % 60).padStart(2, "0");
+          const timestamp = `${dateStr}T${hour}:${minute}:00+0000`;
+          script += `printf '%s\\n' "${dateStr} ${i}" >> canvas.txt\n`;
+          script += "git add canvas.txt\n";
+          script += `GIT_AUTHOR_DATE="${timestamp}" GIT_COMMITTER_DATE="${timestamp}" git commit -m "paint" >/dev/null\n`;
         }
       });
 
@@ -568,6 +2269,12 @@ echo ""
 git remote add origin "$REPO_URL" 2>/dev/null || git remote set-url origin "$REPO_URL"
 
 if [ "$FORCE_PUSH" = true ]; then
+  echo "WARNING: this will overwrite history in $REPO_URL"
+  read -r -p "Continue with force push? [y/N] " confirm_force_push
+  if [ "$confirm_force_push" != "y" ] && [ "$confirm_force_push" != "Y" ]; then
+    echo "Cancelled."
+    exit 1
+  fi
   echo "Force pushing to $REPO_URL ..."
   git push -u origin main --force
 else
@@ -578,61 +2285,237 @@ fi
 echo "Visit your GitHub profile to see the result!"
 `;
 
+      clearStatus();
       return script;
     }
 
-    document.getElementById('generateBtn').addEventListener('click', () => {
-      const script = generateScript();
-      if (!script) return;
-
-      const blob = new Blob([script], { type: 'text/x-shellscript' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'git-painter.sh';
-      a.click();
-      URL.revokeObjectURL(url);
-    });
-
-    // -------------------------------------------------------------------------
-    // Live commit counter
-    // -------------------------------------------------------------------------
-
-    function updateCommitCount() {
-      if (!currentGrid) return;
-      const maxCommits = parseInt(document.getElementById('commitIntensity').value) || 20;
-      let total = 0;
-      currentGrid.forEach(cell => {
-        if (cell.date) total += getCommitCount(cell.level, maxCommits);
-      });
-      let counter = document.getElementById('commitCount');
-      if (!counter) {
-        counter = document.createElement('p');
-        counter.id = 'commitCount';
-        counter.style.cssText = 'color: #8b949e; font-size: 12px; margin-top: 0.5rem;';
-        document.getElementById('previewSection').appendChild(counter);
-      }
-      counter.textContent = `Total commits: ${total.toLocaleString()}`;
-    }
-
-    document.getElementById('commitIntensity').addEventListener('input', updateCommitCount);
-
     function loadImage(file) {
+      if (!file.type.startsWith("image/")) {
+        setStatus("The selected file is not an image.", "error");
+        return;
+      }
+
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onerror = () => setStatus("The image could not be read.", "error");
+      reader.onload = (event) => {
         const img = new Image();
+        img.onerror = () => setStatus("The image could not be decoded in the browser.", "error");
         img.onload = () => {
           uploadedImageData = img;
-          uploadZone.innerHTML = `<p>&#10004; ${file.name} loaded — drag another to replace</p>`;
-          document.getElementById('controls').style.display = '';
-          document.getElementById('previewSection').style.display = '';
-          document.getElementById('scriptSettings').style.display = '';
-          processImage();
+          elements.uploadZone.innerHTML = `
+            <strong>${escapeHtml(file.name)} ready</strong>
+            <span>Drop another image or click here to replace it.</span>
+          `;
+          elements.uploadZone.appendChild(elements.fileInput);
+          elements.controls.style.display = "";
+          elements.previewSection.style.display = "";
+          elements.scriptSettings.style.display = "";
+          clearStatus();
+          updateSliderDisplays();
+          processGridSource();
         };
-        img.src = e.target.result;
+        img.src = String(event.target.result || "");
       };
       reader.readAsDataURL(file);
     }
+
+    elements.yearSelect.addEventListener("change", (event) => {
+      currentYear = parseInt(event.target.value, 10);
+      if (ensureSourceReady()) processGridSource();
+      else updatePreview();
+    });
+
+    elements.inputMode.addEventListener("change", (event) => {
+      currentMode = event.target.value;
+      updateModeUI();
+      elements.controls.style.display = "";
+      elements.previewSection.style.display = "";
+      elements.scriptSettings.style.display = "";
+      if (ensureSourceReady()) processGridSource();
+      else updatePreview();
+      setStatus(`Mode switched to ${currentMode}. ${getActiveSourceLabel()}.`, "info");
+    });
+
+    elements.uploadZone.addEventListener("click", () => elements.fileInput.click());
+    elements.imageUploadBtn.addEventListener("click", () => elements.fileInput.click());
+    elements.drawPalette.querySelectorAll("button").forEach((button) => {
+      button.addEventListener("click", () => setDrawBrush(Number(button.dataset.level)));
+    });
+    elements.stampPresetBtn.addEventListener("click", () => {
+      setDrawTool("stamp");
+    });
+    elements.fillDrawBtn.addEventListener("click", () => {
+      setDrawTool("fill");
+    });
+    elements.undoDrawBtn.addEventListener("click", () => {
+      const key = String(currentYear);
+      const history = drawHistory.get(key) || [];
+      const previous = history.pop();
+      if (!previous) return;
+      const redo = drawRedo.get(key) || [];
+      redo.push(currentGrid.map((cell) => (cell.date ? cell.level : -1)));
+      drawRedo.set(key, redo);
+      drawHistory.set(key, history);
+      restoreDrawState(previous);
+    });
+    elements.redoDrawBtn.addEventListener("click", () => {
+      const key = String(currentYear);
+      const redo = drawRedo.get(key) || [];
+      const next = redo.pop();
+      if (!next) return;
+      const history = drawHistory.get(key) || [];
+      history.push(currentGrid.map((cell) => (cell.date ? cell.level : -1)));
+      drawHistory.set(key, history);
+      drawRedo.set(key, redo);
+      restoreDrawState(next);
+    });
+    elements.lineDrawBtn.addEventListener("click", () => {
+      setDrawTool("line");
+    });
+    elements.mirrorDrawBtn.addEventListener("click", () => {
+      pushDrawHistory();
+      mirrorDrawGrid();
+    });
+    elements.clearDrawBtn.addEventListener("click", () => {
+      pushDrawHistory();
+      const { cells, totalWeeks } = buildDrawGrid(currentYear);
+      cells.forEach((cell) => {
+        if (cell.date !== null) cell.level = 0;
+      });
+      currentGrid = cells;
+      syncDrawStateFromGrid();
+      renderGrid(cells, totalWeeks, currentYear);
+      updateStats();
+    });
+    elements.graphGrid.addEventListener("pointerdown", (event) => {
+      if (currentMode !== "draw") return;
+      const cell = event.target.closest(".graph-cell.editable");
+      if (!cell) return;
+      const index = Number(cell.dataset.index);
+      if (drawTool === "stamp") {
+        pushDrawHistory();
+        stampPresetAt(index, elements.drawPresetSelect.value);
+        return;
+      }
+      if (drawTool === "fill") {
+        pushDrawHistory();
+        floodFillDraw(index);
+        setDrawTool("paint");
+        return;
+      }
+      if (drawTool === "line") {
+        if (drawLineStartIndex === null) {
+          drawLineStartIndex = index;
+          return;
+        }
+        pushDrawHistory();
+        drawLineBetween(drawLineStartIndex, index);
+        setDrawTool("paint");
+        return;
+      }
+      pushDrawHistory();
+      isDrawing = true;
+      applyDrawToCell(index);
+    });
+    elements.graphGrid.addEventListener("pointerover", (event) => {
+      if (currentMode !== "draw" || !isDrawing) return;
+      const cell = event.target.closest(".graph-cell.editable");
+      if (!cell) return;
+      applyDrawToCell(Number(cell.dataset.index));
+    });
+    window.addEventListener("pointerup", () => {
+      isDrawing = false;
+    });
+    elements.uploadZone.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      elements.uploadZone.classList.add("dragover");
+    });
+    elements.uploadZone.addEventListener("dragleave", () => {
+      elements.uploadZone.classList.remove("dragover");
+    });
+    elements.uploadZone.addEventListener("drop", (event) => {
+      event.preventDefault();
+      elements.uploadZone.classList.remove("dragover");
+      const file = event.dataTransfer.files[0];
+      if (file) loadImage(file);
+    });
+    elements.fileInput.addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (file) loadImage(file);
+      event.target.value = "";
+    });
+
+    [elements.thresholdSlider, elements.zoomSlider, elements.posXSlider, elements.posYSlider].forEach((input) => {
+      input.addEventListener("input", () => {
+        updateSliderDisplays();
+        if (currentMode === "preset") renderPresetCards();
+        if (ensureSourceReady()) processGridSource();
+      });
+    });
+    [elements.textScale, elements.letterSpacing].forEach((input) => {
+      input.addEventListener("input", () => {
+        updateSliderDisplays();
+        if (ensureSourceReady()) processGridSource();
+      });
+    });
+    elements.textPreset.addEventListener("change", () => {
+      elements.drawPresetSelect.value = elements.textPreset.value;
+      renderPresetCards();
+      if (ensureSourceReady()) processGridSource();
+    });
+    elements.drawPresetSelect.addEventListener("change", () => {
+      elements.textPreset.value = elements.drawPresetSelect.value;
+      renderPresetCards();
+    });
+    elements.textStyle.addEventListener("change", () => {
+      if (ensureSourceReady()) processGridSource();
+    });
+    elements.textInput.addEventListener("input", () => {
+      const normalized = normalizeTextInput(elements.textInput.value);
+      if (elements.textInput.value !== normalized) elements.textInput.value = normalized;
+      if (ensureSourceReady()) {
+        clearStatus();
+        processGridSource();
+      } else {
+        updatePreview();
+      }
+    });
+    elements.invertToggle.addEventListener("change", () => {
+      if (ensureSourceReady()) processGridSource();
+    });
+    elements.commitIntensity.addEventListener("input", () => {
+      elements.commitIntensity.value = String(clampNumber(elements.commitIntensity.value, 4, 100, 20));
+      updateStats();
+    });
+    elements.repoUrl.addEventListener("input", () => {
+      if (elements.statusMessage.classList.contains("error") || elements.statusMessage.classList.contains("warning")) {
+        clearStatus();
+      }
+    });
+
+    elements.generateBtn.addEventListener("click", () => {
+      const script = generateScript();
+      if (!script) return;
+
+      const blob = new Blob([script], { type: "text/x-shellscript" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "git-painter.sh";
+      link.click();
+      URL.revokeObjectURL(url);
+      setStatus("git-painter.sh downloaded.", "info");
+    });
+
+    populatePresetSelectors();
+    updateProjectLinks();
+    updateModeUI();
+    populateYearSelector();
+    renderPresetCards();
+    updateSliderDisplays();
+    setDrawBrush(0);
+    updatePreview();
+    setStatus(`Ready. Pick an image and a target year. Current default year: ${currentYear}.`, "info");
   </script>
 </body>
 </html>
